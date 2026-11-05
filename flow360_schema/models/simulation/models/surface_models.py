@@ -55,6 +55,7 @@ from flow360_schema.models.simulation.validation.validation_utils import (
     check_deleted_surface_pair,
     remap_symmetric_ghost_entity,
     validate_entity_list_surface_existence,
+    warn_if_string_expression_is_in_solver_units,
 )
 
 logger = logging.getLogger(__name__)
@@ -112,8 +113,20 @@ class HeatFlux(SingleAttributeModel):
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
     value: StringExpression | HeatFluxDim.Float64 = pd.Field(
-        description="The heat flux value. A positive value cools the fluid; a negative value heats it.",
+        description="The heat flux value. A positive value cools the fluid; a negative value heats it. "
+        + "When a string expression is supplied it carries no units and needs to be nondimensionalized "
+        + "by the Flow360 heat flux unit (rho_inf * U_scale^3).",
     )
+
+    @contextual_field_validator("value", mode="after")
+    @classmethod
+    def _warn_string_expression_is_in_solver_units(cls, value):
+        warn_if_string_expression_is_in_solver_units(
+            value,
+            field_description="`HeatFlux.value`",
+            solver_unit="the Flow360 heat flux unit (rho_inf * a_inf^3)",
+        )
+        return value
 
 
 class Temperature(SingleAttributeModel):
@@ -131,7 +144,21 @@ class Temperature(SingleAttributeModel):
     """
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
-    value: StringExpression | AbsoluteTemperature.Float64 = pd.Field(description="The temperature value.")
+    value: StringExpression | AbsoluteTemperature.Float64 = pd.Field(
+        description="The temperature value. "
+        + "When a string expression is supplied it carries no units and needs to be nondimensionalized "
+        + "by the freestream temperature defined in `operating_condition`."
+    )
+
+    @contextual_field_validator("value", mode="after")
+    @classmethod
+    def _warn_string_expression_is_in_solver_units(cls, value):
+        warn_if_string_expression_is_in_solver_units(
+            value,
+            field_description="`Temperature.value`",
+            solver_unit="the freestream temperature defined in `operating_condition`",
+        )
+        return value
 
 
 class TotalPressure(Flow360BaseModel):
@@ -162,6 +189,16 @@ class TotalPressure(Flow360BaseModel):
         description="The total pressure value. When a string expression is supplied the value"
         + " needs to be nondimensionalized by the Flow360 pressure unit (rho_inf * a_inf^2)."
     )
+
+    @contextual_field_validator("value", mode="after")
+    @classmethod
+    def _warn_string_expression_is_in_solver_units(cls, value):
+        warn_if_string_expression_is_in_solver_units(
+            value,
+            field_description="`TotalPressure.value`",
+            solver_unit="the Flow360 pressure unit (rho_inf * a_inf^2)",
+        )
+        return value
 
 
 class Pressure(SingleAttributeModel):
@@ -449,7 +486,11 @@ class Wall(BoundaryBase):
     )
 
     velocity: WallVelocityModelTypes | VelocityVectorType | None = pd.Field(
-        None, description="Prescribe a velocity or the velocity model on the wall."
+        None,
+        description="Prescribe a velocity or the velocity model on the wall. "
+        + "When a string expression is supplied it carries no units and needs to be nondimensionalized "
+        + "by the reference velocity scaling (the freestream speed of sound for `AerospaceCondition`); "
+        + "the coordinates `x`, `y`, `z` inside it are divided by the mesh unit.",
     )
 
     heat_spec: HeatFlux | Temperature = pd.Field(
@@ -526,6 +567,16 @@ class Wall(BoundaryBase):
             raise ValueError("Expression cannot be used when using liquid as simulation material.")
         return value
 
+    @contextual_field_validator("velocity", mode="after")
+    @classmethod
+    def _warn_string_expression_is_in_solver_units(cls, value):
+        warn_if_string_expression_is_in_solver_units(
+            value,
+            field_description="`Wall.velocity`",
+            solver_unit="the freestream speed of sound",
+        )
+        return value
+
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
     """
@@ -575,7 +626,10 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         description="The default values are set according to the "
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, provide a legacy expression for each component or one compile-time expression "
-        + "for the velocity vector.",
+        + "for the velocity vector. "
+        + "When a string expression is supplied it carries no units and needs to be nondimensionalized "
+        + "by the reference velocity scaling (the freestream speed of sound for `AerospaceCondition`); "
+        + "the coordinates `x`, `y`, `z` inside it are divided by the mesh unit.",
     )
     entities: EntityList[
         Surface,
@@ -596,6 +650,16 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
 
         if isinstance(value, tuple) and all(isinstance(component, str) for component in value):
             raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
+
+    @contextual_field_validator("velocity", mode="after")
+    @classmethod
+    def _warn_string_expression_is_in_solver_units(cls, value):
+        warn_if_string_expression_is_in_solver_units(
+            value,
+            field_description="`Freestream.velocity`",
+            solver_unit="the freestream speed of sound",
+        )
         return value
 
 
@@ -689,7 +753,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       ...     total_temperature="1.0+0.2*pow(0.1*(1.0-y*y),2.0)",
       ...     velocity_direction=(1.0, 0.0, 0.0),
       ...     spec=fl.TotalPressure(
-      ...         value="pow(1.0+0.2*pow(0.1*(1.0-y*y),2.0),1.4/0.4)",
+      ...         value="pow(1.0+0.2*pow(0.1*(1.0-y*y),2.0),1.4/0.4) / 1.4",
       ...     ),
       ... )
 
@@ -735,6 +799,16 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
                 "`rotate_velocity_direction_with_mesh` cannot be set when `velocity_direction` is not specified."
             )
         return self
+
+    @contextual_field_validator("total_temperature", mode="after")
+    @classmethod
+    def _warn_string_expression_is_in_solver_units(cls, value):
+        warn_if_string_expression_is_in_solver_units(
+            value,
+            field_description="`Inflow.total_temperature`",
+            solver_unit="the freestream temperature defined in `operating_condition`",
+        )
+        return value
 
 
 class SlipWall(BoundaryBase):

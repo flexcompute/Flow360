@@ -93,7 +93,7 @@ Actions and objects registered through those managers can be modified by directl
             entities=draft.body_groups["body_group_1"],
             coordinate_system=fl.CoordinateSystem(
                 name="body_group_1_translation",
-                origin=[0, 0, 0] * fl.u.mm,
+                reference_point=[0, 0, 0] * fl.u.mm,
                 axis_of_rotation=(0, 0, 1),
                 angle_of_rotation=0 * fl.u.deg,
                 scale=(1.0, 1.0, 1.0),

@@ -33,6 +33,7 @@ from flow360_schema.models.entities.output_entities import (
     Point,
     PointArray,
     PointArray2D,
+    PointGroup,
     Slice,
 )
 from flow360_schema.models.entities.surface_entities import (
@@ -158,6 +159,19 @@ def sanitize_file_name(name: str) -> str:
     make a name resolve to one file for the solver and another for everything reading it back.
     """
     return name.replace("/", "_")
+
+
+# RFC 3986 unreserved and legal in a POSIX/Windows filename, so no escaping in an S3 key.
+_RENDER_STEM_SAFE_CHARS = "_-."
+
+# Matches the WebUI's `/\s+/g`, so a run of whitespace becomes one `_` on both sides.
+_RENDER_STEM_WHITESPACE_RUN = re.compile(r"\s+")
+
+
+def render_artifact_stem(name: str) -> str:
+    """Stem of the artifact a `RenderOutput` publishes under `visualize/renders/` (SCFD-10440)."""
+    collapsed = _RENDER_STEM_WHITESPACE_RUN.sub("_", name)
+    return "".join(c for c in collapsed if c.isalnum() or c in _RENDER_STEM_SAFE_CHARS).strip(".")
 
 
 def _class_name_list(types: tuple[Any, ...]) -> str:
@@ -1148,7 +1162,7 @@ class RenderOutput(_AnimationSettings):
 
     """
 
-    name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
+    name: FileNameString = pd.Field("Render output", description="Name of the `RenderOutput`.")
     groups: list[RenderOutputGroup] = pd.Field([])
     camera: Camera | LegacyCamera = pd.Field(description="Camera settings", default_factory=Camera)
     lighting: Lighting = pd.Field(description="Lighting settings", default_factory=Lighting.default)
@@ -1222,12 +1236,13 @@ class ProbeOutput(_OutputBase):
     """
 
     name: str = pd.Field("Probe output", description="Name of the monitor group.")
-    entities: EntityList[Point, PointArray] = pd.Field(
+    entities: EntityList[Point, PointArray, PointGroup] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
-        + ":class:`~flow360.PointArray` entities belonging to this "
-        + "monitor group. :class:`~flow360.PointArray` is used to "
-        + "define monitored points along a line.",
+        + ":class:`~flow360.PointArray`/:class:`~flow360.PointGroup` entities belonging "
+        + "to this monitor group. :class:`~flow360.PointArray` is used to "
+        + "define monitored points along a line, and :class:`~flow360.PointGroup` "
+        + "to hold many explicitly listed points under one name.",
     )
     output_fields: UniqueItemList[VolumeProbeFieldNames | str | UserVariable] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
@@ -1308,12 +1323,14 @@ class SurfaceProbeOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface probe output", description="Name of the surface monitor group.")
-    entities: EntityList[Point, PointArray] = pd.Field(
+    entities: EntityList[Point, PointArray, PointGroup] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
-        + ":class:`~flow360.PointArray` entities belonging to this "
-        + "surface monitor group. :class:`~flow360.PointArray` "
-        + "is used to define monitored points along a line.",
+        + ":class:`~flow360.PointArray`/:class:`~flow360.PointGroup` entities belonging "
+        + "to this surface monitor group. :class:`~flow360.PointArray` "
+        + "is used to define monitored points along a line, and "
+        + ":class:`~flow360.PointGroup` to hold many explicitly listed points "
+        + "under one name.",
     )
     # Maybe add preprocess for this and by default add all Surfaces?
     target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
@@ -1442,12 +1459,13 @@ class TimeAverageProbeOutput(_OutputBase):
     """
 
     name: str | None = pd.Field("Time average probe output", description="Name of the `TimeAverageProbeOutput`.")
-    entities: EntityList[Point, PointArray] = pd.Field(
+    entities: EntityList[Point, PointArray, PointGroup] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
-        + ":class:`~flow360.PointArray` entities belonging to this "
-        + "monitor group. :class:`~flow360.PointArray` is used to "
-        + "define monitored points along a line.",
+        + ":class:`~flow360.PointArray`/:class:`~flow360.PointGroup` entities belonging "
+        + "to this monitor group. :class:`~flow360.PointArray` is used to "
+        + "define monitored points along a line, and :class:`~flow360.PointGroup` "
+        + "to hold many explicitly listed points under one name.",
     )
     output_fields: UniqueItemList[VolumeProbeFieldNames | str | UserVariable] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
@@ -1562,12 +1580,14 @@ class TimeAverageSurfaceProbeOutput(_OutputBase):
         "Time average surface probe output",
         description="Name of the `TimeAverageSurfaceProbeOutput`.",
     )
-    entities: EntityList[Point, PointArray] = pd.Field(
+    entities: EntityList[Point, PointArray, PointGroup] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
-        + ":class:`~flow360.PointArray` entities belonging to this "
-        + "surface monitor group. :class:`~flow360.PointArray` "
-        + "is used to define monitored points along a line.",
+        + ":class:`~flow360.PointArray`/:class:`~flow360.PointGroup` entities belonging "
+        + "to this surface monitor group. :class:`~flow360.PointArray` "
+        + "is used to define monitored points along a line, and "
+        + ":class:`~flow360.PointGroup` to hold many explicitly listed points "
+        + "under one name.",
     )
     target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`~flow360.component.simulation.primitives.Surface` "

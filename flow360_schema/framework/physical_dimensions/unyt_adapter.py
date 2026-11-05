@@ -112,6 +112,16 @@ def from_unyt_array(value: Any, dimension_meta: DimensionMeta) -> tuple[float, .
     return tuple(float(x) for x in converted.value)
 
 
+def from_unyt_vector3_array(value: Any, dimension_meta: DimensionMeta) -> list[tuple[float, float, float]]:
+    """Extract an (N, 3) array from a unyt array, converting to SI units."""
+    if not is_unyt_quantity(value):
+        raise TypeError(f"Expected unyt quantity, got {type(value).__name__}")
+
+    si_unit = get_si_unit(dimension_meta)
+    converted = value.to(si_unit)
+    return [(float(row[0]), float(row[1]), float(row[2])) for row in converted.value]
+
+
 # Re-export utils that external code imports from this module
 __all__ = [
     "dsl_to_unyt_unit",
@@ -121,5 +131,6 @@ __all__ = [
     "to_unyt_array_with_fallback_info",
     "from_unyt_scalar",
     "from_unyt_array",
+    "from_unyt_vector3_array",
     "check_dimension",
 ]

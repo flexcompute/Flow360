@@ -69,7 +69,7 @@ We will do this step-by-step using the Python API.  Open your Python interpreter
    import flow360client
    import json
 
-   meshJson = json.load(open('/path/to/Flow360Mesh.json')
+   meshJson = json.load(open('/path/to/Flow360Mesh.json'))
 
 Now upload the mesh using the following command:
 
@@ -130,7 +130,7 @@ The residuals history and total forces can be downloaded, respectively, using th
 
 Finally, you can download the surface forces by their component names using the following commands:
 
-.. code-block:: python
+.. code-block:: text
 
    flow360client.case.GetCaseSurfaceForcesByNames(caseId, <list of boundaryNames>)
 

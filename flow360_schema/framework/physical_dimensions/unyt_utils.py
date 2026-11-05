@@ -105,7 +105,7 @@ def is_numeric_scalar(value: Any) -> bool:
 
 
 def is_zero_value(value: Any) -> bool:
-    """Check if value is a pure numeric zero scalar or iterable of zeros."""
+    """Check if value is a pure numeric zero scalar or nested array of zeros."""
     if is_unyt_quantity(value):
         return False
 
@@ -114,6 +114,12 @@ def is_zero_value(value: Any) -> bool:
             return float(value) == 0.0
         if isinstance(value, (int, float)):
             return value == 0
+        # Nested sequences recurse, so an (N, 3) block answers the same as a flat one.
+        # `is_bare_numeric_array` accepts both shapes and the two have to agree: a shape
+        # this one fails to recognize as zero slips the `allow_zero=False` gate and loses
+        # the unit-agnostic exemption a bare zero is entitled to.
+        if isinstance(value, (list, tuple, np.ndarray)):
+            return all(is_zero_value(item) for item in value)
         if hasattr(value, "__iter__"):
             return all(float(item) == 0.0 for item in value)
     except (TypeError, ValueError):
@@ -136,10 +142,11 @@ def is_bare_numeric_array(value: Any) -> bool:
     """Check if value should be treated as bare numeric array input for unit fallback.
 
     Only accepts concrete sequences (list, tuple, numpy array) to avoid
-    consuming single-use iterables like generators.
+    consuming single-use iterables like generators. Nesting is allowed so that shapes
+    like `(N, 3)` are recognized; unyt rejects a ragged one when it builds the array.
     """
     if isinstance(value, (list, tuple)):
-        return all(is_numeric_scalar(item) for item in value)
+        return all(is_numeric_scalar(item) or is_bare_numeric_array(item) for item in value)
 
     return (
         isinstance(value, np.ndarray)

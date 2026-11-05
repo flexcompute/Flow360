@@ -170,7 +170,7 @@ Please contact customer support for more information.
 
 Your Flow360 API key is stored locally in a configuration file at:
 
-.. code-block:: python
+.. code-block:: text
 
    ~/.flow360/config.toml
 

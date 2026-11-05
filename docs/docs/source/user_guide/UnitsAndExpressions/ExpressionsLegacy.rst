@@ -66,6 +66,9 @@ In an expression, users can use solution variables as well as custom variables. 
 .. note::
     All variables are non-dimensional. More information on nondimensionalization in Flow360 can be found at :ref:`non_dim_input_userGuide` and :ref:`non_dim_output_userGuide`.
 
+.. caution::
+    The **result** of the expression is non-dimensional too, and the expression cannot carry units — there is nowhere to attach them and none are inferred. This matters most where the same field also accepts a dimensional value: :code:`velocity=(29, 0, 0) * u.m / u.s` is 29 m/s, while :code:`velocity=("29", "0", "0")` is 29 times the :ref:`reference velocity scaling <reference_velocity_scaling>`, which for an :py:class:`AerospaceCondition` means Mach 29. The spatial coordinates :code:`x`, :code:`y`, :code:`z` are likewise divided by the mesh unit, and :code:`t` is the non-dimensional time. Divide your dimensional values by the reference values in :ref:`non_dim_input_userGuide` before writing them into an expression.
+
 
 Variables that are defined on all grid nodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

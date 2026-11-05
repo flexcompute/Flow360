@@ -25,6 +25,7 @@ Project and Cloud Management
 
 * :doc:`Change Account and Submit <change_account>`
 * :doc:`Folder Operations <folder_operations>`
+* :doc:`Submit a Project to a Shared Workspace <submit_to_shared_workspace>`
 * :doc:`Fork a Case <fork>`
 * :doc:`List Projects <list_projects>`
 * :doc:`Move Case to Folder <move_case_to_folder>`
@@ -63,6 +64,7 @@ The following examples use the legacy ``flow360.v1`` API.
    download_results
    change_account
    folder_operations
+   submit_to_shared_workspace
    fork
    list_projects
    move_case_to_folder

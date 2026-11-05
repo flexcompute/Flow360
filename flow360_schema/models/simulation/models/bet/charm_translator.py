@@ -23,6 +23,11 @@ from flow360_schema.models.simulation.models.bet.bet_translator_interface import
 
 logger = logging.getLogger(__name__)
 
+# Caller-controlled repeat notation is expanded into Python lists before the
+# downstream station and polar budgets are known. Share this limit across every
+# blade-geometry array so compact input cannot create an unbounded parse result.
+CHARM_MAX_GEOMETRY_VALUES = 100_000
+
 
 def _charm_int(token):
     """
@@ -34,7 +39,7 @@ def _charm_int(token):
     return int(float(token))
 
 
-def _expand_charm_repeat_notation(tokens):
+def _expand_charm_repeat_notation(tokens, remaining_values):
     """
     Expand CHARM repeat notation (e.g., '20*0.0', '16*0.1', '12*-3.0', '11*0')
     into a flat list of floats.
@@ -42,6 +47,7 @@ def _expand_charm_repeat_notation(tokens):
     Attributes
     ----------
     tokens: list of str, whitespace-split tokens from a CHARM input file line
+    remaining_values: int, maximum number of values this line may add
     return: list of float
     """
     result = []
@@ -50,9 +56,17 @@ def _expand_charm_repeat_notation(tokens):
             parts = token.split("*")
             count = _charm_int(parts[0])
             value = float(parts[1])
-            result.extend([value] * count)
         else:
-            result.append(float(token))
+            count = 1
+            value = float(token)
+        if count < 0:
+            raise Flow360ValueError("CHARM repeat counts must be non-negative.")
+        if count > remaining_values - len(result):
+            raise Flow360ValueError(
+                f"CHARM blade geometry expands above the {CHARM_MAX_GEOMETRY_VALUES} "
+                "numeric-value limit; reduce repeat counts or array lengths."
+            )
+        result.extend([value] * count)
     return result
 
 
@@ -137,6 +151,7 @@ def parse_charm_blade_geometry(bg_file_content):
     lines = bg_file_content.strip().split("\n")
 
     bg_dict = {}
+    expanded_geometry_values = 0
     i = 0
     while i < len(lines):
         line = lines[i].strip()
@@ -182,7 +197,9 @@ def parse_charm_blade_geometry(bg_file_content):
                 if _charm_bg_keyword(next_line) is not None:
                     break
                 tokens = next_line.split()
-                values.extend(_expand_charm_repeat_notation(tokens))
+                expanded = _expand_charm_repeat_notation(tokens, CHARM_MAX_GEOMETRY_VALUES - expanded_geometry_values)
+                values.extend(expanded)
+                expanded_geometry_values += len(expanded)
                 i += 1
             bg_dict[store_key] = values
             continue
@@ -210,6 +227,53 @@ def parse_charm_blade_geometry(bg_file_content):
         raise Flow360ValueError("CHARM blade geometry file has CHORD with no numeric values")
 
     return bg_dict
+
+
+def _blend_coefficient_to_flat_plate(coefficient, alphas, data, mach_keys):
+    """Extend one coefficient to +/-180 deg using the shared flat-plate blend.
+
+    :func:`blend_polars_to_flat_plate` blends CL and CD together on a single
+    shared alpha grid, but CHARM lets each coefficient carry its own grid and
+    its own extent, so they have to be blended separately before being unified.
+    The helper is called with the coefficient of interest in its matching slot
+    and a throwaway copy in the other; only the matching slot is kept.
+
+    Returns the (possibly extended) alpha list and the matching value array.
+    """
+    if coefficient not in ("cl", "cd"):
+        raise Flow360ValueError(f"Unknown coefficient {coefficient!r}, expected 'cl' or 'cd'.")
+
+    has_min, has_max = alphas[0] == -180, alphas[-1] == 180
+    if has_min and has_max:
+        return alphas, data
+
+    values = {key: list(data[i, :]) for i, key in enumerate(mach_keys)}
+    throwaway = {key: list(row) for key, row in values.items()}
+    if coefficient == "cl":
+        blended_alphas, _, kept, _ = blend_polars_to_flat_plate(list(alphas), mach_keys, values, throwaway)
+    else:
+        blended_alphas, _, _, kept = blend_polars_to_flat_plate(list(alphas), mach_keys, throwaway, values)
+
+    blended_alphas = list(blended_alphas)
+    blended = np.array([kept[key] for key in mach_keys])
+
+    # blend_polars_to_flat_plate appends -180 and +180 unconditionally, so a
+    # one-sided table (already covering exactly one end) comes back with that end
+    # duplicated: the measured value followed by the synthetic flat-plate stub.
+    # np.interp is documented to need a strictly increasing grid, and at a
+    # duplicated right edge it returns the *last* matching value, silently
+    # replacing the deck's own coefficient at +180 with the stub. Drop the
+    # fabricated endpoint on any side the table already covered.
+    if has_min:
+        blended_alphas, blended = blended_alphas[1:], blended[:, 1:]
+    if has_max:
+        blended_alphas, blended = blended_alphas[:-1], blended[:, :-1]
+
+    if np.any(np.diff(blended_alphas) <= 0):
+        raise Flow360ValueError(
+            f"CHARM flat-plate blending produced a non-increasing {coefficient} alpha grid: {blended_alphas}."
+        )
+    return blended_alphas, blended
 
 
 def parse_charm_airfoil_tables(af_file_content):
@@ -300,7 +364,11 @@ def parse_charm_airfoil_tables(af_file_content):
         return vals[0], vals[1 : ncols + 1], cur
 
     sections = []
-    for _ in range(nsec):
+    # Collected per section, reported once for the whole file: a rotor with
+    # a dozen sections should not emit a dozen identical lines.
+    alpha_grid_mismatches = []
+    mach_grid_mismatches = []
+    for sec_idx in range(nsec):
         # Skip 2 comment/separator lines
         idx += 1
         idx += 1
@@ -354,21 +422,15 @@ def parse_charm_airfoil_tables(af_file_content):
         cl_data = cl_data.T
         cd_data = cd_data.T
 
-        # Unify CD onto the CL alpha grid so a single blend covers both polars
-        if cd_alphas != cl_alphas:
-            cd_unified = np.zeros((cd_data.shape[0], len(cl_alphas)))
-            for m_idx in range(cd_data.shape[0]):
-                cd_unified[m_idx, :] = np.interp(cl_alphas, cd_alphas, cd_data[m_idx, :])
-            cd_data = cd_unified
-            cd_alphas = list(cl_alphas)
-
-        # Reconcile CD onto the CL Mach grid. CHARM permits a separate CD Mach
-        # count/grid (ndmach, cd_machs) from the CL grid (nlmach, cl_machs), but
-        # everything downstream pairs CL and CD by Mach index, so interpolate CD
-        # along the Mach axis onto cl_machs. Without this, a section whose CD Mach
-        # grid differs from its CL grid raises an IndexError during flat-plate
-        # blending or silently mismatches drag to the wrong Mach number.
+        # Reconcile CD onto the CL Mach grid first, before any alpha work: the
+        # flat-plate blend below pairs CL and CD by Mach key, so both must already
+        # share a Mach grid. CHARM permits a separate CD Mach count/grid (ndmach,
+        # cd_machs) from the CL grid (nlmach, cl_machs), but everything downstream
+        # pairs CL and CD by Mach index. Without this, a section whose CD Mach grid
+        # differs from its CL grid raises an IndexError during blending or silently
+        # mismatches drag to the wrong Mach number.
         if cd_machs != cl_machs:
+            mach_grid_mismatches.append(sec_idx)
             cd_on_cl_mach = np.zeros((len(cl_machs), cd_data.shape[1]))
             cd_machs_arr = np.array(cd_machs)
             for a_idx in range(cd_data.shape[1]):
@@ -376,15 +438,39 @@ def parse_charm_airfoil_tables(af_file_content):
             cd_data = cd_on_cl_mach
             cd_machs = list(cl_machs)
 
-        # If the CL alpha range does not cover -180..180, blend to flat-plate
-        if cl_alphas[0] != -180 or cl_alphas[-1] != 180:
-            mach_keys = [str(m) for m in cl_machs]
-            cl_dict = {k: list(cl_data[i, :]) for i, k in enumerate(mach_keys)}
-            cd_dict = {k: list(cd_data[i, :]) for i, k in enumerate(mach_keys)}
-            cl_alphas, _, cl_dict, cd_dict = blend_polars_to_flat_plate(cl_alphas, mach_keys, cl_dict, cd_dict)
-            cd_alphas = list(cl_alphas)
-            cl_data = np.array([cl_dict[k] for k in mach_keys])
-            cd_data = np.array([cd_dict[k] for k in mach_keys])
+        mach_keys = [str(m) for m in cl_machs]
+
+        # Extend each coefficient to +/-180 deg over its OWN missing range, before
+        # unification. CHARM lets each coefficient carry its own alpha grid and its
+        # own extent, and np.interp clamps outside the source range: unifying first
+        # would turn a lift table measured over, say, +/-20 deg into a constant
+        # plateau across a drag table's +/-180 deg grid, and the resulting +/-180
+        # endpoints would then suppress the flat-plate blend entirely. Blending
+        # first keeps each coefficient's real coverage and gives flat-plate physics
+        # everywhere it has no data.
+        cl_alphas, cl_data = _blend_coefficient_to_flat_plate("cl", cl_alphas, cl_data, mach_keys)
+        cd_alphas, cd_data = _blend_coefficient_to_flat_plate("cd", cd_alphas, cd_data, mach_keys)
+
+        # Unify CL and CD onto a single alpha grid. CHARM's C81 header encodes
+        # (n_mach, n_alpha) separately for each coefficient, so the two grids
+        # routinely differ; the CDI decks carry 39 CL alphas against 65 CD alphas.
+        # Take the union rather than either grid on its own: pushing CD onto the
+        # sparser CL grid discards the reverse-flow drag plateau near +/-90 deg,
+        # where the CD table spends its resolution and the CL table has none.
+        # Both grids now span the same extent, so this interpolation never clamps.
+        if cd_alphas != cl_alphas:
+            union_alphas = sorted(set(cl_alphas) | set(cd_alphas))
+            alpha_grid_mismatches.append((sec_idx, len(cl_alphas), len(cd_alphas), len(union_alphas)))
+            cl_unified = np.zeros((cl_data.shape[0], len(union_alphas)))
+            for m_idx in range(cl_data.shape[0]):
+                cl_unified[m_idx, :] = np.interp(union_alphas, cl_alphas, cl_data[m_idx, :])
+            cd_unified = np.zeros((cd_data.shape[0], len(union_alphas)))
+            for m_idx in range(cd_data.shape[0]):
+                cd_unified[m_idx, :] = np.interp(union_alphas, cd_alphas, cd_data[m_idx, :])
+            cl_data = cl_unified
+            cd_data = cd_unified
+            cl_alphas = list(union_alphas)
+            cd_alphas = list(union_alphas)
 
         sections.append(
             {
@@ -395,6 +481,32 @@ def parse_charm_airfoil_tables(af_file_content):
                 "cd_alphas": cd_alphas,
                 "cd": cd_data.tolist(),
             }
+        )
+
+    # Separate alpha and Mach grids per coefficient are normal in CHARM, so a
+    # lossless union is reported at INFO. Reconciling the Mach axis is lossy --
+    # CD's own Mach samples are replaced by values interpolated onto the CL Mach
+    # list -- so that keeps WARNING. Both are aggregated to one line per file so
+    # routine reconciliation cannot bury a genuine anomaly.
+    if alpha_grid_mismatches:
+        widest = max(alpha_grid_mismatches, key=lambda entry: entry[3])
+        logger.info(
+            "CHARM: %s of %s airfoil section(s) carry different CL and CD alpha grids; "
+            "each pair was interpolated onto its union (widest: section %s, %s CL and "
+            "%s CD alphas onto %s).",
+            len(alpha_grid_mismatches),
+            nsec,
+            widest[0],
+            widest[1],
+            widest[2],
+            widest[3],
+        )
+    if mach_grid_mismatches:
+        logger.warning(
+            "CHARM: airfoil section(s) %s carry a different CD Mach grid from their CL "
+            "grid; CD was interpolated onto the CL Mach list, which does not preserve "
+            "CD's own Mach samples.",
+            mach_grid_mismatches,
         )
 
     return {
@@ -480,6 +592,20 @@ def parse_charm_rotor_wake(rw_file_content):
 # CHARM default (flag 0) -- confirm against the CHARM manual / Dan Wachspress's
 # conventions and update if a different value denotes the x->y->z order.
 CHARM_SUPPORTED_ITILT = 0
+
+# Guard rails on the common alpha grid built from caller-supplied CHARM files.
+# The grid is the union across every section, so sections whose grids are only
+# slightly offset expand it towards the sum of their lengths rather than the
+# longest one, and that grid is then replicated across sections, Mach numbers
+# and geometry stations. 2000 alphas is finer than 0.2 deg over the full
+# -180..180 range. The volume limit counts the section arrays and the emitted
+# station lists together, because both are live while the station loop runs, and
+# it also bounds CPU: the radial interpolation runs one scalar np.interp per
+# emitted value, so 2e6 caps a request at roughly a second of interpolation.
+# The largest shipped deck (01_single_rotor: 6 sections, 20 stations, 17 Mach,
+# 97 alphas) reaches 85,748, so this clears it by a factor of ~23.
+CHARM_MAX_COMMON_ALPHAS = 2000
+CHARM_MAX_POLAR_VALUES = 2_000_000
 
 
 def charm_xtilt_to_axis(xtilt_deg, itilt=None, default_axis=(0.0, 0.0, 1.0)):
@@ -643,18 +769,53 @@ def translate_charm_to_bet_dict(bg_file_content, af_file_content, length_unit, a
         twists.append({"radius": r_stations[i] * length_unit, "twist": twist_vals[i] * angle_unit})
         chords.append({"radius": r_stations[i] * length_unit, "chord": chord_vals[i] * length_unit})
 
-    # Get Mach numbers and alphas from the airfoil tables (first section as reference)
+    # Get Mach numbers from the airfoil tables (first section as reference)
     mach_numbers = af["sections"][0]["mach_numbers"]
-    cl_alphas_raw = np.array(af["sections"][0]["alphas"])
     n_machs = len(mach_numbers)
     reynolds_numbers = [1]
 
-    # Use CL alpha grid as the common grid; interpolate CD onto it if they differ
-    alphas_deg = cl_alphas_raw
+    # Common alpha grid: the union across every section rather than section zero's
+    # grid. Sections can legitimately differ -- CHARM allows each its own header
+    # code, and flat-plate blending extends a section that stops short of +/-180
+    # while leaving one that already spans it untouched. Taking section zero's
+    # grid would silently decimate any finer section. The union is computed here,
+    # after blending, because blending inserts alphas.
+    section_alpha_grids = [tuple(sec["alphas"]) for sec in af["sections"]]
+    alphas_deg = np.array(sorted({a for grid in section_alpha_grids for a in grid}))
     n_alphas = len(alphas_deg)
+    if len(set(section_alpha_grids)) > 1:
+        logger.warning(
+            "CHARM: airfoil sections have %s different alpha grids (%s points); "
+            "all interpolated onto their union (%s points).",
+            len(set(section_alpha_grids)),
+            [len(g) for g in section_alpha_grids],
+            n_alphas,
+        )
 
-    # Airfoil section radial positions and their CL/CD data
-    af_radii = np.array(af["radial_positions"])
+    if n_alphas > CHARM_MAX_COMMON_ALPHAS:
+        raise Flow360ValueError(
+            f"CHARM airfoil tables expand to {n_alphas} distinct alphas across "
+            f"{len(af['sections'])} section(s), above the {CHARM_MAX_COMMON_ALPHAS} limit. "
+            "Sections whose alpha grids are slightly offset from one another produce a "
+            "union far larger than any single grid; align the section alpha grids."
+        )
+    # Sum rather than max: the per-section arrays and the emitted station lists
+    # are both live while the station loop runs.
+    polar_values = 2 * (af["nsec"] + n_stations) * n_machs * n_alphas
+    if polar_values > CHARM_MAX_POLAR_VALUES:
+        raise Flow360ValueError(
+            f"CHARM airfoil tables expand to {polar_values} coefficient values "
+            f"(({af['nsec']} sections + {n_stations} stations) x {n_machs} Mach x "
+            f"{n_alphas} alphas, CL and CD), above the {CHARM_MAX_POLAR_VALUES} limit. "
+            "Reduce the number of blade-geometry segments, Mach numbers or alphas."
+        )
+
+    # Airfoil section radial positions and their CL/CD data. CHARM writes these as
+    # r/R fractions in the airfoil file preamble, so scale by the tip radius to get
+    # the absolute radii the geometry stations are expressed in. Without the scale
+    # the polars are placed at the wrong span and, for a blade longer than 1 length
+    # unit, every station outboard of af_radii[-1] clamps to the last table.
+    af_radii = np.array(af["radial_positions"]) * r_stations[-1]
     n_af_sections = af["nsec"]
 
     # Build 3D arrays on common alpha and Mach grids: af_cl/af_cd
@@ -698,6 +859,13 @@ def translate_charm_to_bet_dict(bg_file_content, af_file_content, length_unit, a
             af_cl[sec_idx] = sec_cl
             af_cd[sec_idx] = sec_cd
         else:
+            logger.warning(
+                "CHARM: airfoil section %s has a different Mach grid (%s) from the "
+                "common grid (%s); its polars are interpolated onto the common grid.",
+                sec_idx,
+                sec_machs.tolist(),
+                common_machs.tolist(),
+            )
             for a_idx in range(n_alphas):
                 af_cl[sec_idx, :, a_idx] = np.interp(common_machs, sec_machs, sec_cl[:, a_idx])
                 af_cd[sec_idx, :, a_idx] = np.interp(common_machs, sec_machs, sec_cd[:, a_idx])
@@ -898,10 +1066,12 @@ def generate_charm_bet_json_from_master(
             rotor_omega = rw_omega_rad_s * u.rad / u.s if rw_omega_rad_s > 0 else 0 * u.rpm
 
         # Honour IROTAT from the rw file, defaulting to 1 (right-hand) when the
-        # file omits it — matching translate_charm_master_to_bet_bundle, which
-        # uses rw_data.get("irotat", 1). CHARM convention: 1 = right-hand
-        # (counter-clockwise from above), -1 = left-hand. Warn if the caller's
-        # rule disagrees, then trust the rw file.
+        # file omits it, matching translate_charm_master_to_bet_bundle. CHARM
+        # convention: 1 = right-hand (counter-clockwise from above), -1 =
+        # left-hand. A master describes many rotors and each carries its own
+        # IROTAT, so the per-rotor value has to win: a counter-rotating deck has
+        # no single caller rule that is correct for all of its disks. Warn if the
+        # caller's rule disagrees, then trust the rw file.
         irotat = int(rw_data.get("irotat", 1))
         rw_rule = "rightHand" if irotat == 1 else "leftHand"
         if rw_rule != rotation_direction_rule:

@@ -2274,11 +2274,33 @@ def test_auto_farfield_full_body_domain_type_surface_on_y0_not_marked_deleted():
     assert errors is None
 
 
-def test_auto_farfield_full_body_domain_type_no_symmetric_ghost_bc_warning():
+@pytest.mark.parametrize(
+    "coordinate_system_status",
+    [
+        None,
+        CoordinateSystemStatus(
+            coordinate_systems=[CoordinateSystem(name="vehicle", private_attribute_id="cs-1")],
+            parents=[],
+            assignments=[
+                CoordinateSystemAssignmentGroup(
+                    coordinate_system_id="cs-1",
+                    entities=[
+                        CoordinateSystemEntityRef(entity_type="GeometryBodyGroup", entity_id="body")
+                    ],
+                )
+            ],
+        ),
+    ],
+    ids=["untransformed", "body_moved_by_coordinate_system"],
+)
+def test_auto_farfield_full_body_domain_type_no_symmetric_ghost_bc_warning(
+    coordinate_system_status,
+):
     # AutomatedFarfield + full_body + GAI on a half-geometry whose bbox has a face on Y=0.
     # Auto detection would infer a symmetry plane, but explicit `full_body` tells the mesher
     # to keep the full geometry and generate no `symmetric` boundary. The `symmetric` ghost
-    # must therefore not be treated as a real boundary needing a boundary condition.
+    # must therefore not be treated as a real boundary needing a boundary condition, also
+    # when a coordinate system moves the body and leaves the cached bbox stale.
     surface_body = Surface(
         name="body",
         private_attribute_id="body",
@@ -2307,6 +2329,7 @@ def test_auto_farfield_full_body_domain_type_no_symmetric_ghost_bc_warning():
                 ),
             ],
         ),
+        coordinate_system_status=coordinate_system_status,
     )
 
     farfield = AutomatedFarfield(domain_type="full_body")

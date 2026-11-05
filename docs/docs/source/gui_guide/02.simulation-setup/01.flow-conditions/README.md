@@ -275,7 +275,7 @@ condition = fl.AerospaceCondition(
 
 condition = fl.AerospaceCondition.from_mach_reynolds(
     mach=0.85,
-    reynolds=1e6,
+    reynolds_mesh_unit=1e6,
     project_length_unit=1 * u.m,
     temperature=288.15 * u.K,
     alpha=2.0 * u.degree,

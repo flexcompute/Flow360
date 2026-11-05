@@ -35,6 +35,7 @@ from flow360_schema.models.simulation.outputs.output_fields import (
     _CMz_CUMULATIVE,
     _CMz_PER_SPAN,
 )
+from flow360_schema.models.simulation.outputs.outputs import render_artifact_stem
 from flow360_schema.models.simulation.simulation_params import SimulationParams
 
 from flow360.component.results.base_results import (
@@ -1053,20 +1054,6 @@ _RENDERS_REMOTE_DIR = "visualize/renders"
 _RENDER_FRAME_RE = re.compile(r"^(?P<name>.+)_\d{4,}$")
 
 
-def _sanitize_render_name(name: str) -> str:
-    """Mirror the merger's ``sanitize_id``: render artifact filenames keep
-    alphanumerics and underscores and map whitespace to ``_``, dropping anything
-    else. Used so a lookup with the configured ``RenderOutput.name`` (which may
-    contain spaces) resolves to the sanitized on-disk stem."""
-    sanitized = ""
-    for char in name:
-        if char.isalnum() or char == "_":
-            sanitized += char
-        elif char.isspace():
-            sanitized += "_"
-    return sanitized
-
-
 class RenderResultFileModel(ResultBaseModel):
     """
     A single render output produced under ``visualize/renders/``.
@@ -1174,7 +1161,7 @@ class RendersResultModel(NamedResultsCollectionModel):
         names_on_disk = [(PurePosixPath(f).name, f) for f in files]
         grouped: Dict[str, List[str]] = {}
         for name, mode in render_outputs:
-            stem = _sanitize_render_name(name)
+            stem = render_artifact_stem(name)
             if mode == "frames":
                 frame_re = re.compile(r"^" + re.escape(stem) + r"_\d+\.png$")
                 matches = [f for fname, f in names_on_disk if frame_re.match(fname)]
@@ -1252,9 +1239,9 @@ class RendersResultModel(NamedResultsCollectionModel):
         form of each key — that matches either spelling regardless of which
         grouping path produced the keys."""
         if name not in self.names:
-            sanitized = _sanitize_render_name(name)
+            sanitized = render_artifact_stem(name)
             name = next(
-                (k for k in self.names if _sanitize_render_name(k) == sanitized),
+                (k for k in self.names if render_artifact_stem(k) == sanitized),
                 name,
             )
         return super().get_result_by_name(name)

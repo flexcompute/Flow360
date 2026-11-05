@@ -187,3 +187,12 @@ htmlcov/
 
 # Local override pointing conf.py at a local compute checkout
 /local_paths.toml
+
+# Report docs pages fetched from flex by tools/fetch_report_docs.py (never commit)
+/.report_docs_codespell_ignore.txt
+/docs/source/.report_docs_manifest
+/docs/source/gui_guide/03.analysis/07.reports.md
+/docs/source/gui_guide/03.analysis/Figures/reports-*
+/docs/source/user_guide/Report/
+/docs/source/python_api/API_reference/reports.rst
+/docs/source/python_api/API_reference/reports_snippets/

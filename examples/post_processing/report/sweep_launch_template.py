@@ -20,7 +20,6 @@ This script will:
 import os
 
 import pandas as pd
-from sweep_launch_report import csv_reader, generate_report
 
 import flow360 as fl
 from flow360 import u
@@ -177,7 +176,6 @@ def create_mesh_params(draft):
 
 
 def assign_boundary_conditions(draft, project):
-
     if project.project_tree.root.asset_type == "Geometry":
         models = [
             fl.Wall(
@@ -223,7 +221,9 @@ def project_from_geometry():
     project_name = "sweep_evtol_from_geometry"
     project = fl.Project.from_geometry(EVTOL.geometry, name=project_name)
     with fl.create_draft(
-        new_run_from=project.geometry, face_grouping="faceName", edge_grouping="edgeName"
+        new_run_from=project.geometry,
+        face_grouping="faceName",
+        edge_grouping="edgeName",
     ) as draft:
         mesh_params = create_mesh_params(draft)
         project.generate_volume_mesh(params=mesh_params, name="mesh_name")
@@ -266,7 +266,9 @@ def main():
     # active (inside the `with` block) while cases are submitted.
     if project.project_tree.root.asset_type == "Geometry":
         draft = fl.create_draft(
-            new_run_from=project.geometry, face_grouping="faceName", edge_grouping="edgeName"
+            new_run_from=project.geometry,
+            face_grouping="faceName",
+            edge_grouping="edgeName",
         )
     else:
         draft = fl.create_draft(new_run_from=vm)
@@ -274,23 +276,7 @@ def main():
     with draft:
         models = assign_boundary_conditions(draft, project)
         params = make_run_params(draft, vm, models)
-        csv_path = launch_sweep(params, project, vm, dir_name)
-
-    generate_report(
-        *csv_reader(csv_path),
-        include_geometry=True,
-        include_general_tables=True,
-        include_residuals=True,
-        include_cfl=True,
-        include_forces_moments_table=True,
-        include_forces_moments_charts=True,
-        include_forces_moments_alpha_charts=True,
-        include_forces_moments_beta_charts=True,
-        include_cf_vec=True,
-        include_cp=True,
-        include_yplus=True,
-        include_qcriterion=True,
-    )
+        launch_sweep(params, project, vm, dir_name)
 
 
 ######################################################################################################################

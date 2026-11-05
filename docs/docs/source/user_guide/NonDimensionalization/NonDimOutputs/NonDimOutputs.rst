@@ -307,6 +307,25 @@ To recover the dimensional heat transfer rate, multiply by :math:`\rho_\infty\,U
    q    = q_nd * density * U_scale**3 * L_grid**2   # W
 
 
+.. _non_dim_surface_integral:
+
+Surface Integral Output
+^^^^^^^^^^^^^^^^^^^^^^^
+
+A surface integral of a :py:class:`~flow360.UserVariable` is dimensional. Its unit is the unit of the variable times the area unit of the unit system your parameters were defined in (:math:`\text{m}^2` in SI). With SI parameters, a mass flux in :math:`\text{kg}/(\text{m}^2\,\text{s})` gives :math:`\text{kg}/\text{s}`, a pressure in :math:`\text{Pa}` gives :math:`\text{N}`, and a dimensionless variable such as ``solution.Mach`` gives :math:`\text{m}^2`, not a non-dimensional value. A solver variable passed directly is converted to a user variable named after it and the unit system (``Mach_SI``) and follows the same rule.
+
+To change the unit, set the unit of the local variable with :py:meth:`~flow360.UserVariable.in_units`; the area unit is still appended, so a variable in :math:`\text{kPa}` gives :math:`\text{kN}`. The unit of the integral itself cannot be requested. In the WebUI, the variable's ``Unit system`` in :doc:`Variable Settings </gui_guide/05.tools/02.variable-settings>` plays this role, while the area unit follows the simulation's unit system, so keep the two the same.
+
+Neither the CSV file, ``case.results.monitors`` nor the WebUI Monitor chart shows a unit. Attach it yourself before converting:
+
+.. code-block:: python
+
+   df   = case.results.monitors["mass_flow"].as_dataframe()
+   mdot = (df["mass_flux_integral"].values * fl.u.kg / fl.u.s).to("lb/s")
+
+A legacy :py:class:`~flow360.UserDefinedField`, named as a string, is the exception. The solver sums the expression over the surface nodes with no unit conversion and no area weighting, so the expression must include ``nodeNormals`` and the result is non-dimensional. Multiply it by the reference value of the integrated quantity from :ref:`the table above <tab_non_dim_output>` and by :math:`L_\text{gridUnit}^2`. For a mass flow rate, :math:`\dot{m} = \dot{m}^*\,\rho_\infty\,U_\text{scale}\,L_\text{gridUnit}^2`, with :math:`U_\text{scale}` the :ref:`reference velocity scaling <reference_velocity_scaling>`.
+
+
 .. _visualization_outputs:
 
 Visualization Tips

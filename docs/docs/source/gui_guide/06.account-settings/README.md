@@ -11,6 +11,7 @@
 | [Preferences](./01.preferences.md) | Configure default project loading behaviour and default mesher selection |
 | [Virtual GPU Scheduler](./02.virtual-gpu-scheduler.md) | Monitor daily vGPU allocation, view and manage the job queue, adjust job priorities, and switch jobs to FlexCredits billing |
 | [Billing](./03.billing.md) | View your Flex Credit balance, company-wide storage usage, transaction history, and per-user usage breakdown on one page |
+| [Company workspace](./04.company-workspace.md) | Administrators: check whether the shared workspace is enabled, set its name and logo, and review the activity log |
 
 ---
 
@@ -48,10 +49,20 @@
 
 ---
 
+### [Company workspace](./04.company-workspace.md)
+
+*The Company workspace page lets company administrators manage the shared workspace. It appears only for administrators, and only once the shared workspace has been enabled for the company.*
+
+- **Workspaces:** Enabled or disabled status, and the shared workspace's name and logo shown in the workspace selector.
+- **Activity:** A log of who created, moved, duplicated, ran or deleted projects and folders in the shared workspace, filterable by member, event and project.
+
+---
+
 ```{toctree}
 :hidden:
 :maxdepth: 2
 ./01.preferences.md
 ./02.virtual-gpu-scheduler.md
 ./03.billing.md
+./04.company-workspace.md
 ```

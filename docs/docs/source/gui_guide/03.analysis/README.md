@@ -14,6 +14,7 @@
 | [Visualization](./04.visualization.md) | Advanced visualization tools for flow field data | Flow pattern analysis |
 | [Aeroacoustic](./05.aeroacoustic.md) | Acoustic analysis and noise prediction | Sound generation and propagation |
 | [Case comparison](./06.case-comparison.md) | Side-by-side comparison of multiple cases: configuration diff, shared visualization, and charts with CSV export | Cross-case and parameter-sweep analysis |
+| [Reports](./07.reports.md) | Saved documents combining summary tables, synchronized 3D visualizations and 2D charts over assets from any project, exportable to PDF | Design comparison, study records and hand-off |
 
 ---
 
@@ -88,6 +89,17 @@
 - Chart, table, or combined layouts
 - CSV export of the comparison table
 
+### Reports
+
+*Gather geometries, meshes and cases from any project into a saved, editable report and export it to PDF.*
+
+**Features:**
+- Summary tables per asset type, with reference-case deltas and force-scope selection
+- Visualization sections with up to eight synchronized views, scenes and viewpoints
+- 2D charts over sweep parameters, solver history or spatial coordinates, with CSV export
+- Grid layout with reorderable, resizable and renamable sections
+- PDF export with per-section content and viewpoint selection
+
 ---
 
 ```{toctree}
@@ -99,4 +111,5 @@
 ./04.visualization.md
 ./05.aeroacoustic.md
 ./06.case-comparison.md
+./07.reports.md
 ```

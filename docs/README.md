@@ -8,7 +8,7 @@ Every path given in this section is assumed to be a child of docs/source.
 
 - **_ext/**: custom autodoc extension modules (`flow360_autodoc.py`, `flow360_documenters.py`, `flow360_type_resolver.py`, etc.) that drive the Python API reference generation.
 - **_static/**: site assets — logos (`Flow360-logo.svg`), stylesheets (`custom.css`, `theme_overrides.css`, `bugfix.css`, `justify.css`, `example-filter.css`), fonts (`inter_var.woff2`, `ornitons_bold.ttf`), and the JS for the example library filter (`example-filter.js`).
-- **_templates/**: Jinja templates that override Sphinx defaults — page chrome (`layout.html`, `page.html`) and autosummary stubs for classes, attributes, functions, and properties (`class.rst`, `attribute.rst`, `function.rst`, `property.rst`, `class_report.rst`). `rst.py` is a helper used by the templates.
+- **_templates/**: Jinja templates that override Sphinx defaults — page chrome (`layout.html`, `page.html`) and autosummary stubs for classes, attributes, functions, and properties (`class.rst`, `attribute.rst`, `function.rst`, `property.rst`). `rst.py` is a helper used by the templates.
 - **conf.py**: Sphinx configuration — extensions, theme, intersphinx, autodoc options, and registration of the custom `_ext/` modules.
 - **docutils.conf**: docutils-level settings (e.g. table handling) applied to every build.
 - **Figures/**: figures referenced directly from the top-level `index.rst` landing page.
@@ -23,7 +23,7 @@ Guide for the Flow360 web interface. Authored in **Markdown** (MyST) rather than
 
 - `01.introduction/` — dashboard, starting a project, workbench layout, general workflow, project tree, shortcuts, project settings
 - `02.simulation-setup/` — flow conditions, mesh, flow solver, output
-- `03.analysis/` — dashboard, convergence, monitor, visualization, aeroacoustic
+- `03.analysis/` — dashboard, convergence, monitor, visualization, aeroacoustic, case comparison, reports (`07.reports.md` is fetched from flex, see "Report docs fetched from flex" below)
 - `04.entities-browser/` — geometry, surface/volume mesh, volumes, points, slices, sample surfaces
 - `05.tools/`, `06.account-settings/`
 - `README.md` — the section's toctree-equivalent index page
@@ -45,7 +45,7 @@ In-depth reference for solver setup and workflows. `user_guide.rst` is the secti
 
 - `HowDoesItWork/`, `Meshing/`, `AssetDrafts/`, `WorkflowsInterfaces/`
 - `NonDimensionalization/`, `UnitsAndExpressions/`, `OutputConfiguration/`
-- `RunControl/`, `UserDefinedDynamics/`, `Report/`, `Troubleshooting/`
+- `RunControl/`, `UserDefinedDynamics/`, `Troubleshooting/`
 
 That section is supposed to go over different functionalities of the software and explain how to use different features. It can contain recommendations of the setup of different parameters, best practices, some initial workflows etc. It should be relatively interface-independent, except of the features that are available only through one of them. 
 
@@ -53,7 +53,7 @@ That section is supposed to go over different functionalities of the software an
 
 Everything related to the Python client. `python_api.rst` is the section index:
 
-- **API_reference/** — auto-generated reference, organized by domain (`meshing/`, `outputs/`, `surface_models/`, `volume_models/`, `solver_configuration/`, `operating_condition/`, `time_stepping/`, `run_control/`, `report/`, plus top-level `setup.rst`, `entities.rst`, `results.rst`, etc.). Stubs land in `_autosummary/`.
+- **API_reference/** — auto-generated reference, organized by domain (`meshing/`, `outputs/`, `surface_models/`, `volume_models/`, `solver_configuration/`, `operating_condition/`, `time_stepping/`, `run_control/`, plus top-level `setup.rst`, `entities.rst`, `results.rst`, etc.). Stubs land in `_autosummary/`. `reports.rst` autodocs the `flexcompute-flow-report` companion package (installed from PyPI through the `docs` extra) and is fetched from flex, see "Report docs fetched from flex" below.
 - **getting_started/** — installation and API-key setup (`installation_setup.rst`).
 - **example_library/** — end-to-end Jupyter examples. `notebooks/` holds the executed `.ipynb` files, `_notebooks_py/` the paired `.py` sources (those are generated automatically when running sphinx build, do NOT edit!), `thumbnails/` the gallery images.
 - **grab_and_go_snippets/** — short, single-task recipes (download results, fork, list cases, plot convergence, etc.). `index.rst` lists them all. Each recipe's code lives in a real `.py` file under `_snippets/` and is pulled into the page with `.. literalinclude:: _snippets/<name>.py`, never pasted inline. This keeps the code importable so CI can check it against the client (see "Validating doc code against the client" below). A page with two code blocks splits into two files (e.g. `calculate_dimensional_forces_total.py` and `..._excluded.py`).
@@ -108,20 +108,55 @@ For local work it is often more convenient to point the docs build at your local
 
 ### Validating doc code against the client
 
-The grab-and-go snippets and the example-library / quickstart notebooks embed Python that calls the Flow360 client. `tools/validate_doc_code.py` checks that code against the **same client the docs build from** (the `Flow360/` submodule, or your `compute` checkout when `local_paths.toml` is set), without executing anything or touching the cloud. For every snippet `.py` and every notebook code cell it:
+`tools/validate_doc_code.py` checks the Python in the docs against the **same client the docs build from** (the in-tree `flex/public/Flow360` client, as `docs/source/conf.py` sources it), without executing anything or touching the cloud. It covers the grab-and-go snippets, the example-library and quickstart notebooks, the client examples under `examples/`, and the inline `code-block:: python` / ```` ```python ```` samples in rst and md pages. For each one it:
 
-1. parses the source (syntax check), and
-2. resolves every `flow360`-rooted attribute chain (e.g. `fl.Project.from_cloud`, `fl.u.deg`) against the live client, failing on any symbol that no longer exists.
+1. parses the source (syntax check),
+2. resolves every `flow360`-rooted and `flexcompute.flow_report`-rooted attribute chain (e.g. `fl.Project.from_cloud`, `fl.u.deg`, `Report.create`) against the live client and the installed report package, failing on any symbol that no longer exists, and
+3. checks the keyword arguments of each call against the callee, confirming a rejected keyword with a pydantic construction probe, so `fl.Fluid(turbulence_model=...)` fails after that field is renamed.
 
-It ignores anything not rooted in the `flow360` import, so third-party calls (pandas, numpy) never cause false positives. The CI `validate-doc-code` job runs it on every PR, so a renamed or removed client API turns the snippet/notebook red. Because it validates against the committed submodule pointer, bumping that pointer to a new client release re-runs the check and surfaces any drift.
+It ignores anything not rooted in the `flow360` import, so third-party calls (pandas, numpy) never cause false positives. Names the client is known not to export yet are listed in `KNOWN_CLIENT_GAPS` and reported without failing; the run fails once such a name resolves, so delete its entry then.
+
+The CI `validate-code` job runs it with `--strict-fragments` on every PR that changes the docs, the Flow360 client or the schema, so a renamed or removed client API fails on the PR that renames it. An inline block that is deliberately not Python (a placeholder, a shell command) should be tagged `text` or `bash`, not `python`.
 
 Run it locally in the docs environment:
 
 ```
-python tools/validate_doc_code.py              # snippets + all notebooks
-python tools/validate_doc_code.py --no-notebooks
-python tools/validate_doc_code.py --pyright    # also type-check snippets (needs pyright)
+python tools/validate_doc_code.py                     # every surface
+python tools/validate_doc_code.py --strict-fragments  # as CI runs it
+python tools/validate_doc_code.py --no-notebooks      # also --no-inline, --no-examples
+python tools/validate_doc_code.py --pyright           # also type-check snippets (needs pyright)
 ```
+
+### Report docs fetched from flex
+
+The pages of the interactive report feature are not stored in this tree. They live in the `flex` repo, in `frontend/flow360-python-plugin/flow360-report-docs/`, next to the `flexcompute-flow-report` package they describe, so the package owners review them where they work (they have no access to `compute`). The folder's `source/` mirrors this Sphinx source root:
+
+| Fetched into | From flex |
+| :--- | :--- |
+| `gui_guide/03.analysis/07.reports.md` (+ `Figures/reports-*`) | `source/gui_guide/03.analysis/...` |
+| `user_guide/Report/Report.rst` | `source/user_guide/Report/Report.rst` |
+| `python_api/API_reference/reports.rst` (+ `reports_snippets/`) | `source/python_api/API_reference/...` |
+| `docs/.report_docs_codespell_ignore.txt` | `codespell-ignore-words.txt` |
+
+`tools/fetch_report_docs.py` copies them in before every docs job (`sphinx-build`, `validate-code`, `spellcheck`, `linkcheck` in `.github/workflows/flow360-docs-checks.yml`, authenticated with a flex read token) and writes the list of copied files to `docs/source/.report_docs_manifest`. Every destination is gitignored and the script refuses to overwrite a tracked file, so the pages can never be edited here: **change them in flex.** Only the navigation slots that point at them (toctree entries, index cards, options-table rows) belong to this tree; `conf.py` stops with a clear error when the pages are missing.
+
+Which flex commit is fetched is written in `docs/report_docs.ref`:
+
+- `master` and the release candidate under development point at `main`: every merge in flex reaches the next build here without any action.
+- When a release candidate is retired, a one-off PR on that branch pins the file to a flex commit SHA. The pin is never forward-ported.
+
+The API page imports the package from PyPI at the exact version pinned in `pyproject.toml` (`docs` extra, keep `poetry.lock` in sync), so `sphinx-build` autodocs and `validate_doc_code.py` checks the report snippets against the same release. A page change that needs a newer package is a two-step landing: release the package, then bump the pin here.
+
+Locally:
+
+```
+cd flex/public/Flow360
+python3 docs/tools/fetch_report_docs.py                              # flex main (or the pinned SHA), uses `gh auth token`
+python3 docs/tools/fetch_report_docs.py --from-local ~/repos/flex    # a local flex checkout, e.g. a flex PR branch
+python3 docs/tools/fetch_report_docs.py --clean                      # remove the copied files
+```
+
+Flex PRs touching the folder run the same Sphinx build against the mirrored tree (`public_flow360-self-hosted-docs.yml`, source=flex), so a broken cross-reference fails there before it can reach a build here.
 
 ### Expected behavior for new pages
 

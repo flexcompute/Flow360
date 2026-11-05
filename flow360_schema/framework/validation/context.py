@@ -18,6 +18,12 @@ CASE = "Case"
 # When running validation with ALL, it will report errors for all scenarios in one pass
 ALL = "All"
 
+# Attribute stamped on an exception escaping a level-gated validator, naming the levels the
+# resulting error belongs to. Pydantic keeps the original exception object in the error's
+# `ctx["error"]`, which is where the validation service reads it back from and publishes it
+# as `ctx["relevant_for"]`.
+RELEVANT_FOR_ATTRIBUTE = "flow360_relevant_for"
+
 _validation_level_ctx: contextvars.ContextVar[list[Any] | None] = contextvars.ContextVar(
     "validation_levels", default=None
 )

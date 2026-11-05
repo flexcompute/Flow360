@@ -77,7 +77,6 @@ Examples Library
          <span class="ex-group-label">Others</span>
          <button class="ex-filter is-active" data-filter="all" data-group="others">All</button>
          <button class="ex-filter" data-filter="sweep"          data-group="others">Sweep</button>
-         <button class="ex-filter" data-filter="report"         data-group="others">Report</button>
       </div>
    </div>
 
@@ -96,7 +95,7 @@ Examples Library
    .. grid-item-card:: Cold-Started Alpha Sweep
       :link: notebooks/alpha_sweep
       :link-type: doc
-      :class-card: tag-steady tag-rans tag-sweep tag-report tag-aerospace tag-from_geometry tag-legacy
+      :class-card: tag-steady tag-rans tag-sweep tag-aerospace tag-from_geometry tag-legacy
       
       .. image:: thumbnails/alpha_sweep.png
          :class: gallery-img
@@ -104,7 +103,7 @@ Examples Library
    .. grid-item-card:: Conjugate Heat Transfer
       :link: notebooks/conjugate_heat_transfer
       :link-type: doc
-      :class-card: tag-steady tag-rans tag-cht tag-report tag-from_volume_mesh
+      :class-card: tag-steady tag-rans tag-cht tag-from_volume_mesh
       
       .. image:: thumbnails/conjugate_heat_transfer.png
          :class: gallery-img
@@ -144,7 +143,7 @@ Examples Library
    .. grid-item-card:: Hinge Torques Monitoring
       :link: notebooks/hinge_torques
       :link-type: doc
-      :class-card: tag-steady tag-rans tag-aerospace tag-report tag-from_geometry tag-legacy
+      :class-card: tag-steady tag-rans tag-aerospace tag-from_geometry tag-legacy
       
       .. image:: thumbnails/aileron_rudder_airplane_geometry.png
          :class: gallery-img
@@ -248,7 +247,7 @@ Examples Library
    .. grid-item-card:: Wall Roughness
       :link: notebooks/wall_roughness
       :link-type: doc
-      :class-card: tag-steady tag-rans tag-aerospace tag-roughness tag-report tag-from_volume_mesh
+      :class-card: tag-steady tag-rans tag-aerospace tag-roughness tag-from_volume_mesh
 
       .. image:: thumbnails/wall_roughness.png
          :class: gallery-img

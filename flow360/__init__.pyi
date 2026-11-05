@@ -90,6 +90,7 @@ from ._public_namespace import Periodic as Periodic
 from ._public_namespace import Point as Point
 from ._public_namespace import PointArray as PointArray
 from ._public_namespace import PointArray2D as PointArray2D
+from ._public_namespace import PointGroup as PointGroup
 from ._public_namespace import PorousJump as PorousJump
 from ._public_namespace import PorousMedium as PorousMedium
 from ._public_namespace import Pressure as Pressure

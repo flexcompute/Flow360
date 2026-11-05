@@ -8,6 +8,7 @@
     -   [Project Tree](./01.introduction/05.project-tree.md)
     -   [Keyboard Shortcuts](./01.introduction/06.shortcuts.md)
     -   [Project Settings](./01.introduction/07.project-settings.md)
+    -   [Workspaces](./01.introduction/08.workspaces.md)
 
 -   [Simulation Setup](./02.simulation-setup/README.md)
     -   [Flow conditions](./02.simulation-setup/01.flow-conditions/README.md)
@@ -43,6 +44,7 @@
     -   [Preferences](./06.account-settings/01.preferences.md)
     -   [Virtual GPU Scheduler](./06.account-settings/02.virtual-gpu-scheduler.md)
     -   [Billing](./06.account-settings/03.billing.md)
+    -   [Company Workspace](./06.account-settings/04.company-workspace.md)
 
 
 ```{toctree}

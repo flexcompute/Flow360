@@ -38,6 +38,8 @@ The `WebUI <https://flow360.simulation.cloud/>`__ provides a user with a graphic
 
 * **Case Comparison & Post-Processing** - Compare multiple cases side-by-side, generate automatic result plots (e.g., CL vs alpha), create custom XY plots, and analyze convergence histories. Export results as CSV files and images.
 
+* **Reports** - Gather geometries, meshes and cases from any project into a saved report with summary tables, synchronized 3D visualizations and 2D charts against a reference case, and export it to PDF. See :ref:`Reports <report_user_guide>`. The same reports can be created and updated from Python with the ``flexcompute-flow-report`` companion package (:ref:`Python API: Reports <python_api_reports>`).
+
 The WebUI features a 7-panel workbench layout with an interactive 3D viewer, simulation setup panel, entities browser, navigation bar, status bar with Inspector tool, viewer mode controls, and persistent coordinate system reference.
 
 The extensive guide for the Web UI can be found in the :doc:`GUI Guide </gui_guide/README>`.
@@ -61,7 +63,6 @@ The `Python API <https://pypi.org/project/flow360/>`__ provides complete program
 
 * **Python Ecosystem Integration** - Native integration with the scientific Python stack. Results automatically convert to **Pandas DataFrames** for data manipulation (``results.total_forces.as_dataframe()``). Seamless use of **NumPy** for calculations, **Matplotlib** for custom plotting, and **SciPy** for optimization. Full compatibility with machine learning libraries (TensorFlow, PyTorch) and optimization frameworks (PyOptSparse, Dakota) for design optimization workflows.
 
-* **Automated Report Generation** - Generate PDF reports programmatically using the ``flow360.plugins.report`` module. Create customizable reports with 2D/3D charts, tables, convergence plots, and visualization snapshots. Apply statistical operations (averaging, min/max) to data items. Batch-generate reports across multiple cases for comparison studies.
 
 The Python API unlocks powerful automation capabilities including design optimization loops, uncertainty quantification studies, machine learning model training, custom convergence criteria, real-time simulation control, and integration with external CAD/CAE tools. The combination of cloud-based parallel execution and Python's rich ecosystem makes the API ideal for research applications, production workflows, and large-scale parameter explorations.
 
@@ -108,7 +109,7 @@ The basic container (environment) in Flow360 is a **Project**. The project is de
 
 Dependent on the chosen type of root asset different file types are accepted:
 
-* **Geometry**: ESP, EGADS, STEP, IGES, ACIS, AutoCAD-3D, Autodesk Inventor, CATIA V4-V6, Creo-Pro/E, I-deas, IFC, NX-Unigraphics, Parasolid, Revit, Rhino 3D, Solid Edge, SolidWorks, VDA-FS, UGrid, CGNS, STL
+* **Geometry**: ESP, EGADS, STEP, IGES, ACIS, AutoCAD-3D, Autodesk Inventor, CATIA V4-V6, Creo-Pro/E, I-deas, IFC, JT, NX-Unigraphics, Parasolid, Revit, Rhino 3D, Solid Edge, SolidWorks, VDA-FS, UGrid, CGNS, STL
 * **Surface Mesh**: UGrid, CGNS, STL (requires triangular elements)
 * **Volume Mesh**: UGrid, CGNS (acceptable element types: tetrahedrons, hexahedrons, prisms, pyramids)
 
@@ -166,6 +167,8 @@ Workspaces
 
 A project is created inside a **workspace**. Every account has a private workspace, and accounts belonging to a company tenant also have a shared company workspace that is visible to all members of that tenant. Creating a project in the shared workspace is how a team works on the same project rather than on individual copies of it.
 
+In the WebUI, the workspace selector at the top of the left sidebar switches between the two, and the dashboard, project list and search then act inside the selected workspace. The shared workspace is enabled per company: contact your Application Engineer to turn it on. See :doc:`GUI Guide: Workspaces </gui_guide/01.introduction/08.workspaces>`.
+
 From the Python API, workspaces are exposed through :py:class:`~flow360.Workspace`. Ask for the one you want by type, then pass it when creating the project:
 
 .. code-block:: python
@@ -175,14 +178,16 @@ From the Python API, workspaces are exposed through :py:class:`~flow360.Workspac
 
 :py:meth:`~flow360.Workspace.get_private` selects the private workspace in the same way. An account that does not belong to a company tenant has no shared workspace, so :py:meth:`~flow360.Workspace.get_shared` reports that instead of returning nothing, and lists the workspaces it did find.
 
-The same argument accepts a ``Folder``, so a project can be placed directly into a folder of the chosen workspace.
+The same argument accepts a ``Folder``, so a project can be placed directly into a folder of the chosen workspace. A complete, runnable version is in :doc:`Submit a Project to a Shared Workspace </python_api/grab_and_go_snippets/submit_to_shared_workspace>`.
 
 .. admonition:: Important
    :class: important
 
-   Selecting a workspace is independent of switching accounts. ``Accounts.choose_shared_account()`` changes which user you act as, while the workspace decides where resources are created for that user. When you use both, select the workspace after switching accounts.
+   Selecting a workspace is not the same as switching accounts. ``Accounts.choose_shared_account()`` changes which user you act as, while the workspace decides where resources are created for that user.
 
-A project's workspace and folder are set when the project is created and cannot be changed afterwards, so choose the destination up front.
+   The two belong to different company sharing modes, and a company uses one or the other. Shared accounts are the earlier mechanism; once the shared workspace is enabled for a company, its members no longer have shared accounts to switch to, and the shared workspace takes their place as the way to work on common projects.
+
+The Python API sets a project's workspace and folder when the project is created and offers no call to change them afterwards. To move an existing project between the private and the shared workspace, use the **Move** action in the WebUI, described in :doc:`GUI Guide: Workspaces </gui_guide/01.introduction/08.workspaces>`.
 
 .. _project_metadata:
 

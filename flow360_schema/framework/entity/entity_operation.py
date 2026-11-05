@@ -191,6 +191,25 @@ def _transform_point(point: NDArray, matrix: NDArray) -> NDArray:
     return rotation_scale @ point + translation
 
 
+def _transform_points(points: NDArray, matrix: NDArray) -> NDArray:
+    """
+    Transform an (N, 3) array of 3D points using a 3x4 transformation matrix.
+
+    The row-wise equivalent of :func:`_transform_point`, done in one numpy pass so a
+    group of thousands of points costs a single matrix multiply.
+
+    Args:
+        points: 3D points as an (N, 3) numpy array
+        matrix: 3x4 transformation matrix
+
+    Returns:
+        Transformed points as an (N, 3) numpy array
+    """
+    rotation_scale = matrix[:, :3]
+    translation = matrix[:, 3]
+    return points @ rotation_scale.T + translation
+
+
 def _transform_direction(vector: NDArray, matrix: NDArray) -> NDArray:
     """
     Transform a direction vector using only the rotation part of a transformation matrix.
@@ -277,6 +296,18 @@ def _validate_uniform_scale_and_transform_center(matrix: NDArray, center: Any, e
     new_center = type(center)(new_center_array, center.units)
 
     return new_center, uniform_scale
+
+
+def _scale_length(length: Any, scale: float) -> Any:
+    """
+    Scale a length or length vector, keeping the unit it is held in.
+
+    `length * scale` would not: unyt folds a numeric factor of the unit into the magnitude.
+    The translators convert lengths into the project length unit before transforming, which for
+    a millimetre project is `0.001*m`, and `120 (0.001*m) * 1.0` comes back as `0.12 m`. They then
+    write raw magnitudes, so the scaled size would come out 1000 times too small.
+    """
+    return type(length)(length.value * scale, length.units)
 
 
 def _extract_rotation_matrix(matrix: NDArray) -> NDArray:

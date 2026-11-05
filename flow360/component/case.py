@@ -748,6 +748,15 @@ class Case(CaseBase, Flow360Resource):
             RenameAssetRequestV2(name=new_name).dict(), method=self.id
         )
 
+    def delete(self):  # pylint: disable=arguments-differ
+        """
+        Delete the current case.
+
+        Goes through the v2 endpoint. The v1 one runs the S3 cleanup inline before it
+        stops the pipeline job, so a failed cleanup leaves a deleted case still running.
+        """
+        self._web_api_v2.delete()
+
     @classmethod
     def _interface(cls):
         return CaseInterface

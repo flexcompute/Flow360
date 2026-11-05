@@ -352,8 +352,11 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
         used_tags = set()
         _get_used_tags(params, entity_type, used_tags)
 
-        if None in used_tags:
-            used_tags.remove(None)
+        # Faces lacking the grouping attribute (e.g. every face of an STL file when grouping
+        # by `faceName`) are emitted by the geometry pipeline as `__standalone__` Surfaces
+        # inside the same group, so they belong to whatever tag is in use.
+        used_tags.discard(None)
+        used_tags.discard("__standalone__")
 
         used_tags = sorted(list(used_tags))
         current_tag = getattr(entity_info, entity_grouping_tags)
@@ -664,17 +667,28 @@ GEOMETRY_ACCURACY_TOO_COARSE_RATIO = 100  # geometry_accuracy > bbox_max / 100
 
 
 def _collect_length_settings(meshing) -> list:
-    """(label, value) pairs of mesh length settings to sanity-check against the bounding box."""
+    """(label, value, too-fine ratio limit, too-coarse ratio limit) of the default mesh length
+    settings to check against the bounding box. A too-coarse limit of 0 never triggers.
+
+    Refinements are left out, as in the WebUI: they are local by design and legitimately much finer
+    than the whole geometry, while a wrong length unit or scale already shows in the defaults.
+    """
     defaults = getattr(meshing, "defaults", None)
-    refinements = getattr(meshing, "refinements", None) or []
     settings = [
-        ("max_edge_length", getattr(defaults, "surface_max_edge_length", None)),
-        ("geometry_accuracy", getattr(defaults, "geometry_accuracy", None)),
+        (
+            "surface_max_edge_length",
+            getattr(defaults, "surface_max_edge_length", None),
+            MAX_EDGE_LENGTH_TOO_FINE_RATIO,
+            0,
+        ),
+        (
+            "geometry_accuracy",
+            getattr(defaults, "geometry_accuracy", None),
+            GEOMETRY_ACCURACY_TOO_FINE_RATIO,
+            GEOMETRY_ACCURACY_TOO_COARSE_RATIO,
+        ),
     ]
-    for refinement in refinements:
-        settings.append(("max_edge_length", getattr(refinement, "max_edge_length", None)))
-        settings.append(("geometry_accuracy", getattr(refinement, "geometry_accuracy", None)))
-    return [(label, value) for label, value in settings if value is not None]
+    return [setting for setting in settings if setting[1] is not None]
 
 
 def _confirm_length_scale_proceed(warning_message: str) -> bool:
@@ -700,8 +714,8 @@ def _confirm_length_scale_proceed(warning_message: str) -> bool:
 def enforce_length_scale_sanity(params: SimulationParams) -> bool:
     """Decide whether to proceed when a requested mesh length setting is implausibly fine.
 
-    Compares the geometry's largest bounding-box dimension against each requested length setting
-    (``max_edge_length``, ``geometry_accuracy``), mirroring the WebUI thresholds. A "too fine"
+    Compares the geometry's largest bounding-box dimension against the default length settings
+    (``surface_max_edge_length``, ``geometry_accuracy``), mirroring the WebUI check. A "too fine"
     setting usually means the geometry was uploaded with the wrong length unit/scale (e.g. an inches
     model treated as meters), which would launch a needlessly huge meshing job — the user is asked
     to confirm. A "too coarse" ``geometry_accuracy`` is only an advisory soft warning and never
@@ -723,38 +737,24 @@ def enforce_length_scale_sanity(params: SimulationParams) -> bool:
 
     bounding_box_largest_dimension = bounding_box.largest_dimension * project_length_unit
 
-    # Track the worst (highest-ratio) "too fine" offender per setting -> confirm gate.
-    too_fine: dict[str, str] = {}
-    too_fine_ratio: dict[str, float] = {}
-    too_coarse_ratio = None  # lowest-ratio geometry_accuracy -> soft warn only
-    for label, value in _collect_length_settings(params.meshing):
+    too_fine = []
+    for label, value, fine_limit, coarse_limit in _collect_length_settings(params.meshing):
         ratio = (bounding_box_largest_dimension / value).to_value("dimensionless")
-        fine_limit = (
-            MAX_EDGE_LENGTH_TOO_FINE_RATIO
-            if label == "max_edge_length"
-            else GEOMETRY_ACCURACY_TOO_FINE_RATIO
-        )
-        if ratio > fine_limit and ratio > too_fine_ratio.get(label, 0):
-            too_fine_ratio[label] = ratio
-            too_fine[label] = (
-                f"{label} ({value}) is {ratio:.1e}x smaller than the largest dimension"
+        if ratio > fine_limit:
+            too_fine.append(f"{label} ({value}) is {ratio:.1e}x smaller than the largest dimension")
+        elif ratio < coarse_limit:
+            log.warning(
+                f"{label} is coarse relative to the geometry's largest bounding-box dimension "
+                f"({bounding_box_largest_dimension}); the surface mesh may under-resolve the "
+                "geometry."
             )
-        elif label == "geometry_accuracy" and ratio < GEOMETRY_ACCURACY_TOO_COARSE_RATIO:
-            if too_coarse_ratio is None or ratio < too_coarse_ratio:
-                too_coarse_ratio = ratio
-
-    if too_coarse_ratio is not None:
-        log.warning(
-            f"geometry_accuracy is coarse relative to the geometry's largest bounding-box dimension "
-            f"({bounding_box_largest_dimension}); the surface mesh may under-resolve the geometry."
-        )
 
     if not too_fine:
         return True
 
     warning_message = (
         f"The requested mesh resolution is implausibly fine for the geometry's largest bounding-box "
-        f"dimension ({bounding_box_largest_dimension}): " + "; ".join(too_fine.values()) + ". This "
+        f"dimension ({bounding_box_largest_dimension}): " + "; ".join(too_fine) + ". This "
         "usually means the geometry was uploaded with an incorrect length unit or scale and would "
         "launch an unnecessarily large meshing job. Please verify the geometry's length unit or your "
         f"mesh settings. To proceed without prompting (e.g. in a batch loop), wrap the run in "

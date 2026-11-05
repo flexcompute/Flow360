@@ -116,7 +116,11 @@ class GeometryRefinement(Flow360BaseModel):
     Setting for refining surface elements for given `Surface`, or within a
     :class:`~flow360.Box` region. Inside a box, the settings specified here override
     the per-face values of any surface passing through it; settings left unspecified
-    keep their per-face values.
+    keep their per-face values. Where several boxes overlap, each setting is combined
+    towards the more conservative value (finest ``geometry_accuracy``, largest
+    ``sealing_size``, smallest effective ``min_passage_size``, and
+    ``preserve_thin_geometry`` enabled if any box enables it), independently of the
+    order in which the boxes are listed. See :ref:`gai_overlapping_boxes` for details.
 
     Example
     -------
@@ -172,10 +176,29 @@ class GeometryRefinement(Flow360BaseModel):
 
     baffle_face_treatment: Literal["remove", "thicken", "default"] | None = pd.Field(
         None,
-        description="Treatment of baffle faces (faces with both sides facing fluid) within this face group."
-        + "Only applies if remove_hidden_geometry is true. 'remove' deletes them, while 'thicken' inflates "
-        + "them into a thin closed shell. 'default' applies no special treatment. If not specified, "
-        + "inherits meshing.defaults.baffle_face_treatment.",
+        description="Treatment of baffle faces (faces with both sides facing fluid) within this face "
+        + "group: 'remove' deletes them, 'thicken' inflates them into a thin closed shell, and "
+        + "'default' applies no special baffle handling. This only takes effect if "
+        + "remove_hidden_geometry is true. If not specified, inherits "
+        + "meshing.defaults.baffle_face_treatment.",
+    )
+
+    baffle_thicken_outward: pd.NonNegativeFloat | None = pd.Field(
+        None,
+        description="How far a thickened baffle face in this face group extends past the original "
+        + "surface on its more exposed side (the side with more open space around it), in multiples "
+        + "of geometry_accuracy. Which side is more exposed is inferred from the surrounding geometry "
+        + "(if the two sides are equally exposed, the total is split evenly instead). Set to 0 to put "
+        + "the whole shell on the inward side. The two extents must sum to at least 4.0. If not "
+        + "specified, inherits meshing.defaults.baffle_thicken_outward, which is 2.0.",
+    )
+
+    baffle_thicken_inward: pd.NonNegativeFloat | None = pd.Field(
+        None,
+        description="How far a thickened baffle face in this face group extends past the original "
+        + "surface on its less exposed side, in multiples of geometry_accuracy. Set to 0 to put the "
+        + "whole shell on the outward side. The two extents must sum to at least 4.0. If not "
+        + "specified, inherits meshing.defaults.baffle_thicken_inward, which is 2.0.",
     )
 
     # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
@@ -188,13 +211,30 @@ class GeometryRefinement(Flow360BaseModel):
         return self
 
     @pd.model_validator(mode="after")
-    def _reject_baffle_face_treatment_on_box(self):
-        """baffle_face_treatment is a per-surface-patch setting with no support for Box regions yet.
+    def _reject_baffle_settings_on_box(self):
+        """The baffle settings are per-surface-patch with no support for Box regions yet.
         Reject any explicit value (including 'default')."""
-        if self.baffle_face_treatment is not None and any(
-            isinstance(entity, Box) for entity in self.entities.stored_entities
-        ):
-            raise ValueError("'baffle_face_treatment' is only supported for surface GeometryRefinement, not Box.")
+        has_box = any(isinstance(entity, Box) for entity in self.entities.stored_entities)
+        if not has_box:
+            return self
+        for field in ("baffle_face_treatment", "baffle_thicken_outward", "baffle_thicken_inward"):
+            if getattr(self, field) is not None:
+                raise ValueError(f"'{field}' is only supported for surface GeometryRefinement, not Box.")
+        return self
+
+    @pd.model_validator(mode="after")
+    def _reject_baffle_thickness_without_thicken(self):
+        """Shell extents are meaningless unless this group actually thickens its baffles.
+        Only rejected when the group explicitly opts out; an unset treatment inherits from
+        meshing.defaults, which could be 'thicken'."""
+        if self.baffle_face_treatment not in ("remove", "default"):
+            return self
+        for field in ("baffle_thicken_outward", "baffle_thicken_inward"):
+            if getattr(self, field) is not None:
+                raise ValueError(
+                    f"'{field}' requires 'baffle_face_treatment' to be 'thicken', "
+                    f"but it is '{self.baffle_face_treatment}'."
+                )
         return self
 
 

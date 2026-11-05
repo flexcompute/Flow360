@@ -21,7 +21,7 @@ from flow360_schema.framework.entity.entity_utils import (
 )
 from flow360_schema.framework.validation.context import DeserializationContext
 from flow360_schema.models.entities.geometry_entities import Edge, GeometryBodyGroup, MirrorPlane
-from flow360_schema.models.entities.output_entities import Point, PointArray, PointArray2D, Slice
+from flow360_schema.models.entities.output_entities import Point, PointArray, PointArray2D, PointGroup, Slice
 from flow360_schema.models.entities.surface_entities import (
     GhostCircularPlane,
     GhostSphere,
@@ -63,6 +63,7 @@ ENTITY_TYPE_MAP = {
     "Point": Point,
     "PointArray": PointArray,
     "PointArray2D": PointArray2D,
+    "PointGroup": PointGroup,
     "Slice": Slice,
     "SeedpointVolume": SeedpointVolume,
     "WindTunnelGhostSurface": WindTunnelGhostSurface,

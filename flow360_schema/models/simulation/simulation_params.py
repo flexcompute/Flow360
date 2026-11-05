@@ -118,6 +118,7 @@ from flow360_schema.models.simulation.validation.validation_simulation_params im
     _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
+    _check_unique_render_output_names,
     _check_surface_output_naming,
     _check_hybrid_model_to_use_zonal_enforcement,
     _check_krylov_solver_restrictions,
@@ -502,6 +503,12 @@ class SimulationParams(_ParamModelBase):
     def check_duplicate_isosurface_names(cls, outputs):
         """Check if we have isosurfaces with a duplicate name"""
         return _check_duplicate_isosurface_names(outputs)
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def check_unique_render_output_names(cls, outputs):
+        """Check if we have render outputs with a duplicate name"""
+        return _check_unique_render_output_names(outputs)
 
     @contextual_field_validator("outputs", mode="after")
     @classmethod

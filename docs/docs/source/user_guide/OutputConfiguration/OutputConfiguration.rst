@@ -165,6 +165,8 @@ Two behaviours are worth knowing when the surface interacts with moving parts of
 - In a time-averaged output, a node that falls outside the fluid domain stays excluded for the whole averaging window.
 - Nodes that land in a rotating zone are relocated at every physical step, so a stationary sample surface that cuts through a rotating zone continues to sample correctly as the mesh turns.
 
+.. _surfaceIntegralOutput:
+
 Integrating Over a Sample Surface
 ---------------------------------
 
@@ -172,7 +174,7 @@ A :class:`~flow360.SurfaceIntegralOutput` integrates a :class:`~flow360.UserVari
 
 A mass flow rate through a sample surface is therefore written as the local mass flux, the product of density and the velocity component along ``solution.node_unit_normal``, with no area factor of its own. Do not add one: ``solution.node_area_vector`` is a surface quantity and is rejected on a sample surface, so an expression using it fails validation.
 
-Results are written to ``monitor_<output_name>_v2.csv`` and reached through ``case.results.monitors``, as for any surface integral.
+Results are written to ``monitor_<output_name>_v2.csv`` and reached through ``case.results.monitors``, as for any surface integral. The values are dimensional, in the unit of the variable times the area unit of your unit system, and the file carries no unit label. See :ref:`Surface Integral Output <non_dim_surface_integral>` for how the unit is determined and how to request another one.
 
 .. _outputFields_userGuide:
 

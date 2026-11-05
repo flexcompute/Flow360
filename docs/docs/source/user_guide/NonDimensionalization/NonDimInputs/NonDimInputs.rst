@@ -9,8 +9,12 @@ Non-Dimensional Inputs
    Thanks to :ref:`Units <python_API_units_introduction>`, manual dimensionalization of inputs is rarely needed. In most cases, you can simply provide the dimensional value and the unit system will be inferred automatically.
 
 Most input variables in the Flow360 Python API accept dimensional values and non-dimensionalization is automatically performed during the preprocessing. 
-However, there are still input variables defined using string expression that only accept non-dimensional values, such as :py:class:`AngleExpression`, :py:class:`HeatFlux`, etc. 
+However, there are still input variables defined using C-style string expression that only accept non-dimensional values, such as :py:class:`AngleExpression`, :py:class:`HeatFlux`, etc.
+A string expression cannot carry units and none are inferred for it, so the number you write is already the non-dimensional one.
 In this section, we demonstrate how to compute the non-dimensional value for these input variables.
+
+.. caution::
+   Several of the fields in the table below accept either a dimensional value or a string expression, and only the string form is non-dimensional. :code:`Freestream(velocity=(29, 0, 0) * u.m / u.s)` is 29 m/s, while :code:`Freestream(velocity=("29", "0", "0"))` is 29 times :math:`U_\text{scale}` — for an :py:class:`AerospaceCondition` that is Mach 29. Only the string form can vary in space or time.
 
 Theoretically, the reference values for non-dimensionalization can be arbitrary as long as the resulting equations are identical to the original ones, 
 but in practice, the reference values are usually selected based on some typical parameters of problems and flow characteristics to avoid confusion.
@@ -95,6 +99,47 @@ Assume the :math:`q=10\;\text{W}/\text{m}^2`, the non-dimensional :code:`heat_fl
    density = operating_condition.thermal_state.density
    q = 10 * fl.u.W / fl.u.m**2
    heat_flux = q / (density * U_scale ** 3).value
+
+.. _non_dim_boundary_velocity:
+
+Example: Compute a non-dimensional spatially varying boundary velocity
+----------------------------------------------------------------------------------------------------
+
+:py:attr:`Wall.velocity` and :py:attr:`Freestream.velocity` accept either a dimensional value or a per-component
+C-style string expression, and only the string form can vary in space or time. The string form is non-dimensional:
+each component is divided by :math:`U_\text{scale}`, and the coordinates :code:`x`, :code:`y`, :code:`z` inside it
+are divided by :math:`L_{gridUnit}`.
+
+Consider an atmospheric boundary layer profile, a log law with a friction velocity :math:`u_* = 1.2\;\text{m}/\text{s}`,
+a roughness length :math:`z_0 = 0.03\;\text{m}` and von Karman constant :math:`\kappa = 0.41`, capped at
+:math:`29\;\text{m}/\text{s}`, on a mesh built in metres:
+
+.. math::
+
+   u(z) = \min\left(\frac{u_*}{\kappa}\ln\frac{z + z_0}{z_0},\; 29\;\text{m}/\text{s}\right)
+
+Both the coefficient and the cap have to be divided by :math:`U_\text{scale}`, and :math:`z_0` by :math:`L_{gridUnit}`:
+
+.. code-block:: python
+   :linenos:
+
+   u_star, z_0, kappa = 1.2 * fl.u.m / fl.u.s, 0.03 * fl.u.m, 0.41
+   coefficient = (u_star / kappa / U_scale).value
+   cap = (29 * fl.u.m / fl.u.s / U_scale).value
+   z_0_nondim = (z_0 / project.length_unit).value
+
+   velocity = (
+       f"min({coefficient} * log((max(0.0, z) + {z_0_nondim}) / {z_0_nondim}), {cap})",
+       "0",
+       "0",
+   )
+
+.. caution::
+
+   Writing the dimensional numbers straight into the string is a silent error, not a validation failure. With the
+   cap left as :code:`1.0` the profile tops out at one :math:`U_\text{scale}` — for an :py:class:`AerospaceCondition`
+   that is Mach 1, roughly 340 m/s rather than the intended 29 m/s. The case still converges and the contours still
+   look plausible.
 
 .. _alphaBetaAngles:
 

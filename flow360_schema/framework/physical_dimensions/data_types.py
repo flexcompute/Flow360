@@ -21,9 +21,11 @@ from .serializers import (
     serialize_raw_scalar,
     serialize_raw_vector2,
     serialize_raw_vector3,
+    serialize_raw_vector3_array,
     serialize_scalar,
     serialize_vector2,
     serialize_vector3,
+    serialize_vector3_array,
 )
 from .unyt_adapter import to_unyt_array_with_fallback_info, to_unyt_scalar_with_fallback_info
 from .validators import (
@@ -37,6 +39,7 @@ from .validators import (
     positive_vector,
     strictly_increasing,
     vector2_shape,
+    vector3_array_shape,
     vector3_shape,
 )
 from .wire_format_display_unit import generate_array_schema, generate_schema
@@ -49,6 +52,7 @@ class ShapeType(Enum):
     VECTOR3 = "vector3"
     VECTOR2 = "vector2"
     ARRAY = "array"
+    VECTOR3_ARRAY = "vector3_array"
 
 
 @dataclass(frozen=True)
@@ -241,6 +245,25 @@ NonNegativeArrayType = DataTypeDescriptor(
     serialize_si=serialize_array,
     build_schema=generate_array_schema,
 )
+
+# ============================================================================
+# Vector3 Array Types
+# ============================================================================
+
+Vector3ArrayType = DataTypeDescriptor(
+    name="Vector3Array",
+    shape=ShapeType.VECTOR3_ARRAY,
+    validators=(vector3_array_shape,),
+    # `Vector3Json` is an official common-schema primitive, so the exported
+    # `{"type": "array", "items": {"$ref": .../Vector3Json.json}}` needs no new one.
+    schema_type_name="Vector3Json",
+    constraint_kind=ConstraintKind.NO_RANGE,
+    to_unyt=to_unyt_array_with_fallback_info,
+    serialize_raw=serialize_raw_vector3_array,
+    serialize_si=serialize_vector3_array,
+    build_schema=generate_array_schema,
+)
+
 
 # Registry of all descriptors, keyed by composed-type name suffix.
 # Auto-collected from all DataTypeDescriptor instances in this module.

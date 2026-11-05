@@ -13,6 +13,7 @@
 |[Project tree](./05.project-tree.md)| Description of the project tree and the concept of a project |
 |[Keyboard shortcuts](./06.shortcuts.md)| Available keyboard shortcuts in the Flow360 WebUI |
 |[Project settings](./07.project-settings.md)| Configuration and metadata for projects and simulation runs |
+|[Workspaces](./08.workspaces.md)| Your private workspace, the company shared workspace, and moving projects between them |
 
 ---
 ## Detailed Descriptions
@@ -89,6 +90,16 @@
 - **Mesher Options:** Toggle between standard and AI-powered surface meshing, and enable beta mesher features.
 - **Statistics:** View detailed timing information, FlexCredit costs, and status for runs and projects.
 
+---
+
+### Workspaces
+
+*Workspaces are the top-level containers for projects. Every user has a private workspace, and companies can enable a shared workspace where the whole team works on the same projects.*
+
+- **Workspace selector:** Switch between your private workspace and the shared workspace from the top of the left sidebar.
+- **Shared projects:** Projects in the shared workspace are visible to every member of the company; a draft opened by one member is read-only for the others while it is open.
+- **Moving projects:** Move projects between the private and the shared workspace from the project list.
+
 ```{toctree}
 :hidden:
 :maxdepth: 3
@@ -99,4 +110,5 @@
 ./05.project-tree.md
 ./06.shortcuts.md
 ./07.project-settings.md
+./08.workspaces.md
 ```

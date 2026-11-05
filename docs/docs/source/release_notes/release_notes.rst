@@ -1,6 +1,9 @@
 Release Notes
 *************
 
+.. _release-25.11:
+.. include:: release-25.11.rst
+
 .. _release-25.10:
 .. include:: release-25.10.rst
 

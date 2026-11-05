@@ -180,6 +180,7 @@ _DRAFT_ENTITY_TYPE_NAMES = frozenset(
         "Point",
         "PointArray",
         "PointArray2D",
+        "PointGroup",
         "Slice",
         "CustomVolume",
         "SeedpointVolume",

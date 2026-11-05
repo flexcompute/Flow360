@@ -93,7 +93,10 @@ class AngleExpression(SingleAttributeModel):
     """
 
     type_name: Literal["AngleExpression"] = pd.Field("AngleExpression", frozen=True)
-    value: StringExpression = pd.Field(description="The expression defining the rotation angle as a function of time.")
+    value: StringExpression = pd.Field(
+        description="The expression defining the rotation angle as a function of time. The expression carries "
+        + "no units: its result is in radians and the time variable `t` is nondimensional."
+    )
 
     @pd.field_validator("value", mode="after")
     @classmethod
@@ -165,7 +168,9 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
 
     type_name: Literal["expression"] = pd.Field("expression", frozen=True)
     constants: dict[str, StringExpression] | None = pd.Field(
-        None, description="The expression for the initial condition."
+        None,
+        description="Named constants or reusable sub-expressions that the initial condition expressions "
+        + "may reference. Like the expressions themselves, these carry no units and are nondimensional.",
     )
 
 
@@ -240,7 +245,10 @@ class HeatEquationInitialCondition(ExpressionInitialConditionBase):
     """
 
     type_name: Literal["HeatEquationInitialCondition"] = pd.Field("HeatEquationInitialCondition", frozen=True)
-    temperature: StringExpression = pd.Field()
+    temperature: StringExpression = pd.Field(
+        description="The expression defining the initial temperature field. The expression carries no units: "
+        + "it is nondimensionalized by the freestream temperature defined in `operating_condition`."
+    )
 
 
 class PDEModelBase(Flow360BaseModel):
@@ -403,7 +411,10 @@ class Solid(PDEModelBase):
         description="Heat equation solver settings, see " + ":class:`HeatEquationSolver` documentation.",
     )
     volumetric_heat_source: StringExpression | HeatSource.Float64 = pd.Field(
-        0 * u.W / (u.m**3), description="The volumetric heat source."
+        0 * u.W / (u.m**3),
+        description="The volumetric heat source. "
+        + "When a string expression is supplied it carries no units and needs to be nondimensionalized "
+        + "by the Flow360 volumetric heat source unit (rho_inf * U_scale^3 / mesh unit).",
     )
 
     initial_condition: HeatEquationInitialCondition | None = pd.Field(
@@ -1614,7 +1625,10 @@ class PorousMedium(Flow360BaseModel):
         + "the scaling of the inertial loss term."
     )
     volumetric_heat_source: StringExpression | HeatSource.Float64 | None = pd.Field(
-        None, description="The volumetric heat source."
+        None,
+        description="The volumetric heat source. "
+        + "When a string expression is supplied it carries no units and needs to be nondimensionalized "
+        + "by the Flow360 volumetric heat source unit (rho_inf * U_scale^3 / mesh unit).",
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 

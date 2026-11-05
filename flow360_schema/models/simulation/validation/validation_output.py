@@ -395,16 +395,30 @@ def _check_unique_surface_volume_probe_entity_names(params):
         return params
 
     for output_index, output in enumerate(params.outputs):
-        if isinstance(output, ProbeOutputTypes):
-            active_entity_names = set()
-            for entity in output.entities.stored_entities:
-                if entity.name in active_entity_names:
+        if not isinstance(output, ProbeOutputTypes):
+            continue
+        # Compared as monitor keys rather than entity names: an entity standing for
+        # several points expands into several `monitorLocations` keys, so `Point("Rake_0")`
+        # and `PointArray("Rake")` carry distinct names and still write the same key,
+        # of which the solver would keep only one.
+        entity_producing = {}
+        for entity in output.entities.stored_entities:
+            for monitor_key in entity._monitor_key_names:
+                if monitor_key not in entity_producing:
+                    entity_producing[monitor_key] = entity.name
+                    continue
+                previous_entity_name = entity_producing[monitor_key]
+                if previous_entity_name == entity.name:
                     raise ValueError(
                         f"In `outputs`[{output_index}] {output.output_type}: "
                         f"Entity name {entity.name} has already been used in the "
                         f"same `{output.output_type}`. Entity names must be unique."
                     )
-                active_entity_names.add(entity.name)
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: monitor `{monitor_key}` "
+                    f"is produced by both entity `{previous_entity_name}` and entity "
+                    f"`{entity.name}`, so they would share one monitor. Please rename one of them."
+                )
 
     return params
 

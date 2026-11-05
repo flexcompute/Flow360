@@ -158,18 +158,11 @@ Configuration for simulation outputs and result analysis.
         
         Result processing, interpolation, and data manipulation utilities
 
-Reporting
-=========
-
-Report generation and visualization.
-
-.. grid:: 1
-
-    .. grid-item-card:: Report
-        :link: report/report_index
+    .. grid-item-card:: Reports
+        :link: reports
         :link-type: doc
-        
-        Report templates, charts, and data visualization tools
+
+        The ``flexcompute-flow-report`` companion package: create, load and update WebUI reports from Python
 
 .. toctree::
    :hidden:
@@ -192,4 +185,4 @@ Report generation and visualization.
    user_defined_dynamics
    outputs/output_index
    results
-   report/report_index
+   reports

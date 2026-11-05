@@ -100,6 +100,19 @@ different coefficients to each direction. The axes of the assigned volume must
 therefore be defined to align with the physical principal directions of the
 material.
 
+.. _porous_region_definition:
+
+Defining the porous region
+==========================
+
+The porous model needs a volume to act on, and there are three ways to provide one, depending on how precisely the region must follow your geometry.
+
+A **box** is the quickest route: define it over the porous region and assign it to the model. No mesh zone is created; the resistance is applied to the fluid-mesh cells the box covers, so the region boundary is only as sharp as the local mesh. This is usually acceptable for ducts and simple cores; see :ref:`box_edge_windowing` for how coefficients are smoothed near the box faces.
+
+When the porous component is modeled as its own body in the CAD, a **custom volume** built from the body's surfaces gives a dedicated zone whose boundary follows the CAD exactly; the body's surfaces become interfaces to the fluid zone (see :ref:`custom_volumes_and_zones` for how to set it up). If a surface of the porous body coincides with a surface of another body, supply the contact as two duplicated CAD faces, one owned by each body; a single face shared by both is not supported.
+
+If an uploaded **volume mesh** already contains the porous region as a zone, assign that zone directly. Whichever route is used, the assigned volume's axes must be set, as described above.
+
 Calibrating the coefficients
 ============================
 
@@ -163,6 +176,8 @@ time-dependent expression.
     opposite of the wall heat-flux convention, where a positive heat flux denotes
     heat leaving the fluid. The momentum sink itself always opposes the local
     flow, regardless of the sign of the coefficients.
+
+.. _box_edge_windowing:
 
 Box zones and edge windowing
 ============================

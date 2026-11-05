@@ -18,7 +18,7 @@ from flow360_schema.framework.expression.variable import (
     restore_variable_space,
 )
 from flow360_schema.framework.multi_constructor_model_base import parse_model_dict
-from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.framework.validation.context import RELEVANT_FOR_ATTRIBUTE, DeserializationContext
 from flow360_schema.models.entities.volume_entities import Box  # noqa: F401 - required for globals() in parse_model_dict
 from flow360_schema import __version__ as _SCHEMA_PACKAGE_VERSION
 from flow360_schema.models.simulation.models.volume_models import BETDisk  # noqa: F401
@@ -439,18 +439,28 @@ def _traverse_error_location(current, field):
 
 
 def _populate_error_context(error: dict):
-    """Convert error context values to strings for stable serialization."""
+    """Publish the validation levels an error belongs to, then stringify the context.
+
+    A validator gated to one validation level stamps that level on the exception it raises,
+    and Pydantic keeps the exception itself in ``ctx["error"]``. That stamp is the only way
+    a model-level validator's error can say which levels it belongs to: such an error has an
+    empty location, so there is no field annotation to read the levels from. Callers that
+    validate every level in one pass filter on the published ``relevant_for``.
+    """
     ctx = error.get("ctx")
-    if isinstance(ctx, dict):
-        for field_name, context in ctx.items():
-            try:
-                error["ctx"][field_name] = (
-                    [str(item) for item in context] if isinstance(context, list) else str(context)
-                )
-            except Exception:
-                error["ctx"][field_name] = "<couldn't stringify>"
-    else:
+    if not isinstance(ctx, dict):
         error["ctx"] = {}
+        return
+
+    stamped = getattr(ctx.get("error"), RELEVANT_FOR_ATTRIBUTE, None)
+    if stamped is not None and ctx.get("relevant_for") is None:
+        ctx["relevant_for"] = list(stamped)
+
+    for field_name, context in ctx.items():
+        try:
+            ctx[field_name] = [str(item) for item in context] if isinstance(context, list) else str(context)
+        except Exception:
+            ctx[field_name] = "<couldn't stringify>"
 
 
 def _determine_validation_level(

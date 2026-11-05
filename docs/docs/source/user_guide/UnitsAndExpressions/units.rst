@@ -6,7 +6,9 @@ Units
 Most of the Python API inputs are required to be dimensional. User can provide the units per input or use a :ref:`unit system <unit_system>` to let it automatically handle unit inference.
 
 .. note::
-    There are exceptions where the input is expected to be non-dimensional. These are most notably the string expressions (for example :py:attr:`~flow360.Fluid.initial_condition`) since they are directly executed inside the solver where everything is non-dimensional. When composing expressions user should bear in mind that the input and output variables are all non-dimensional.
+    There are exceptions where the input is expected to be non-dimensional. These are most notably the C-style string expressions, since they are directly executed inside the solver where everything is non-dimensional. When composing expressions user should bear in mind that the input and output variables are all non-dimensional.
+
+    A string expression cannot carry units, and none can be attached to it. Writing :code:`"29"` into a velocity component does not mean 29 m/s; it means 29 times the :ref:`reference velocity scaling <reference_velocity_scaling>`. The fields that take this form are :py:attr:`~flow360.Fluid.initial_condition`, :py:attr:`~flow360.Solid.initial_condition`, :py:attr:`~flow360.Solid.volumetric_heat_source`, :py:attr:`~flow360.PorousMedium.volumetric_heat_source`, :py:class:`~flow360.AngleExpression`, :py:attr:`~flow360.Wall.velocity`, :py:attr:`~flow360.Freestream.velocity`, :py:attr:`~flow360.HeatFlux.value`, :py:attr:`~flow360.Temperature.value`, :py:attr:`~flow360.TotalPressure.value`, :py:attr:`~flow360.Inflow.total_temperature` and :py:attr:`~flow360.Inflow.velocity_direction` (a direction, so unitless either way — it is renormalized per node). :ref:`Non-Dimensional Inputs <non_dim_input_userGuide>` lists the reference value for each of the others. Several of these fields also accept an ordinary dimensional value; use that form whenever the quantity does not have to vary in space or time.
 
 For example to set the physical time step as 0.01 seconds, user can provide the input as:
 

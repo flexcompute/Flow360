@@ -16,6 +16,7 @@ from flow360_schema.models.entities.surface_entities import ImportedSurface
 from flow360_schema.models.entity_info import (
     GeometryEntityInfo,
     merge_geometry_entity_info,
+    prefix_model_ids_with_geometry_id,
 )
 from flow360_schema.models.simulation.meshing_param.params import ModularMeshingWorkflow
 from flow360_schema.models.simulation.simulation_params import SimulationParams
@@ -279,7 +280,8 @@ def create_draft(
         merged_entity_info = merge_geometry_entity_info(
             current_entity_info=entity_info,
             entity_info_components=[
-                geometry.entity_info for geometry in active_geometry_dependencies.values()
+                prefix_model_ids_with_geometry_id(geometry.entity_info, geometry_id=geometry.id)
+                for geometry in active_geometry_dependencies.values()
             ],
         )
         return merged_entity_info

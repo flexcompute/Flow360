@@ -7,7 +7,7 @@ Helper functions for serializing unyt objects to plain JSON values.
 from typing import Any
 
 from .dimension_meta import PhysicalDimensionMeta
-from .unyt_adapter import from_unyt_array, from_unyt_scalar, is_unyt_quantity
+from .unyt_adapter import from_unyt_array, from_unyt_scalar, from_unyt_vector3_array, is_unyt_quantity
 
 
 def serialize_scalar(value: Any, dimension_meta: PhysicalDimensionMeta) -> float:
@@ -97,6 +97,23 @@ def serialize_raw_array(value: Any) -> list[float]:
     return [float(x) for x in value]
 
 
+def serialize_vector3_array(value: Any, dimension_meta: PhysicalDimensionMeta) -> list[tuple[float, float, float]]:
+    """Serialize an (N, 3) unyt_array to a list of 3-tuples in SI units.
+
+    The row is a tuple and the outer sequence a list, matching how the other
+    serializers here spell a fixed length versus a variable one.
+    """
+    if is_unyt_quantity(value):
+        return from_unyt_vector3_array(value, dimension_meta)
+    return [(float(row[0]), float(row[1]), float(row[2])) for row in value]
+
+
+def serialize_raw_vector3_array(value: Any) -> list[tuple[float, float, float]]:
+    """Serialize an (N, 3) array by extracting .value without unit conversion."""
+    raw = value.value if is_unyt_quantity(value) else value
+    return [(float(row[0]), float(row[1]), float(row[2])) for row in raw]
+
+
 __all__ = [
     "serialize_scalar",
     "serialize_vector3",
@@ -106,4 +123,6 @@ __all__ = [
     "serialize_raw_vector2",
     "serialize_array",
     "serialize_raw_array",
+    "serialize_vector3_array",
+    "serialize_raw_vector3_array",
 ]

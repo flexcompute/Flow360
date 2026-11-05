@@ -24,6 +24,7 @@ from flow360_schema.models.entities.output_entities import (
     Point,
     PointArray,
     PointArray2D,
+    PointGroup,
     Slice,
 )
 from flow360_schema.models.entities.surface_entities import (
@@ -54,6 +55,7 @@ DraftEntityTypes = Annotated[
     | Point
     | PointArray
     | PointArray2D
+    | PointGroup
     | Slice
     | CustomVolume
     | SeedpointVolume,
@@ -791,17 +793,6 @@ _GroupedEntityT = TypeVar("_GroupedEntityT", GeometryBodyGroup, Surface, Edge)
 _RESOURCE_SCOPED_MODEL_ID_PREFIX = "model"
 
 
-def _resource_scoped_model_id(model_index: int) -> str:
-    """The bare, resource-scoped model identity minted by conversion: ``"model{N}"``.
-
-    N is the model's index into ``ModelFileMetadata.models`` (rootFile order). Conversion
-    (geometryMeta / _inject_cad_group_by_file) mints this onto each ``groupByFile`` body
-    group's ``private_attribute_id``; the merge below keys exclusion and cross-geometry
-    identity on it.
-    """
-    return f"{_RESOURCE_SCOPED_MODEL_ID_PREFIX}{model_index}"
-
-
 _RESOURCE_SCOPED_MODEL_ID_PATTERN = re.compile(rf"{_RESOURCE_SCOPED_MODEL_ID_PREFIX}\d+")
 
 
@@ -818,6 +809,22 @@ def _is_resource_scoped_model_id(private_attribute_id: str) -> bool:
     collision needs a file named exactly ``model<digits>``.
     """
     return _RESOURCE_SCOPED_MODEL_ID_PATTERN.fullmatch(private_attribute_id) is not None
+
+
+# The same id in either shape: the bare ``"model{N}"`` conversion minted before the geometry id
+# was composed at the source, and the ``"{geometryId}/model{N}"`` it mints now. Exclusion is
+# expressed as indices, so it must read both -- a geometry converted by either release has to
+# stay excludable.
+_ANY_MODEL_ID_PATTERN = re.compile(rf"(?:.+/)?{_RESOURCE_SCOPED_MODEL_ID_PREFIX}(\d+)")
+
+
+def _model_index_of(private_attribute_id: str) -> int | None:
+    """The model index a ``groupByFile`` id carries, bare or geometry-composed.
+
+    ``None`` for anything else (a legacy file-name id), which simply never matches an exclusion.
+    """
+    match = _ANY_MODEL_ID_PATTERN.fullmatch(private_attribute_id or "")
+    return int(match.group(1)) if match else None
 
 
 class GeometryComponentMergeContext(Flow360BaseModel):
@@ -963,9 +970,11 @@ def project_entity_info_to_included_models(
 ) -> GeometryEntityInfo:
     """Project a geometry component's entity info to its *included* models.
 
-    Models are excluded by index, matched against the resource-scoped ``"model{N}"`` id that
-    conversion mints onto each ``groupByFile`` body group. The excluded groups' bodies -- and
-    those bodies' faces/edges (via ``bodies_face_edge_ids``) -- are removed from every parallel
+    Models are excluded by index, matched against the index carried by each ``groupByFile`` body
+    group's id -- whether conversion minted it bare (``"model{N}"``) or composed with the geometry
+    id (``"{geometryId}/model{N}"``), so geometries from either release stay excludable. The
+    excluded groups' bodies -- and those bodies' faces/edges (via ``bodies_face_edge_ids``) --
+    are removed from every parallel
     structure (``body_ids``/``grouped_bodies``, ``face_ids``/``grouped_faces``, ``edge_ids``/
     ``grouped_edges``, ``bodies_face_edge_ids``) so the result describes only included content.
     Used before merging components into a draft's ``simulation.json`` so that draft carries no
@@ -982,8 +991,8 @@ def project_entity_info_to_included_models(
     projected component's box no longer covers excluded models. It is ``None`` when every model
     is excluded, since nothing is left to bound.
     """
-    excluded_model_ids = {_resource_scoped_model_id(index) for index in (excluded_model_indices or set())}
-    if not excluded_model_ids:
+    excluded_indices = set(excluded_model_indices or set())
+    if not excluded_indices:
         return entity_info
 
     gbf_groups = _group_by_file_body_groups(entity_info, "project entity info to its included models")
@@ -994,19 +1003,19 @@ def project_entity_info_to_included_models(
         entity_info.grouped_faces[(entity_info.face_attribute_names or []).index("faceId")]
     )
 
-    matched_ids = {group.private_attribute_id or "" for group in gbf_groups} & excluded_model_ids
-    unmatched = sorted(excluded_model_ids - matched_ids)
+    group_indices = [(group, _model_index_of(group.private_attribute_id or "")) for group in gbf_groups]
+    unmatched = sorted(excluded_indices - {index for _, index in group_indices if index is not None})
     if unmatched:
         message = (
             f"Cannot exclude {unmatched} from this geometry: no 'groupByFile' body group carries "
-            f"those minted ids (it has {sorted(g.private_attribute_id or '' for g in gbf_groups)}). "
+            f"those model indices (it has {sorted(g.private_attribute_id or '' for g in gbf_groups)}). "
             "The excluded model indices are out of range for this geometry."
         )
         raise Flow360ValueError(message)
 
     excluded_body_ids: set[str] = set()
-    for group in gbf_groups:
-        if (group.private_attribute_id or "") in excluded_model_ids:
+    for group, index in group_indices:
+        if index in excluded_indices:
             excluded_body_ids.update(group.private_attribute_sub_components or [])
 
     bodies_face_edge_ids = entity_info.bodies_face_edge_ids or {}

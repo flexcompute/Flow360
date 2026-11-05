@@ -13,7 +13,7 @@ with fl.create_draft(
         entities=draft.body_groups["body_group_1"],
         coordinate_system=fl.CoordinateSystem(
             name="body_group_1_transform",
-            origin=[0, 0, 0] * fl.u.mm,
+            reference_point=[0, 0, 0] * fl.u.mm,
             axis_of_rotation=(0, 0, 1),
             angle_of_rotation=0 * fl.u.deg,
             scale=(1.0, 1.0, 1.0),

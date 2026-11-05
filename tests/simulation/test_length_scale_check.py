@@ -12,7 +12,6 @@ from flow360.component.project_utils import (
     GEOMETRY_ACCURACY_TOO_COARSE_RATIO,
     GEOMETRY_ACCURACY_TOO_FINE_RATIO,
     MAX_EDGE_LENGTH_TOO_FINE_RATIO,
-    _collect_length_settings,
     enforce_length_scale_sanity,
 )
 from flow360.component.simulation.warning_bypass import (
@@ -116,28 +115,26 @@ def test_mismatch_bypassed_proceeds_without_prompt(asset_cache, monkeypatch):
         assert enforce_length_scale_sanity(params) is True
 
 
-def test_smallest_refinement_is_binding(asset_cache, monkeypatch):
-    # Defaults safe, but a per-face refinement is implausibly fine -> must block.
-    monkeypatch.setattr("sys.stdin", StringIO("n\n"))
-    boundary = asset_cache.project_entity_info.get_boundaries()[0]
-    with fl.SI_unit_system:
-        refinement = fl.SurfaceRefinement(faces=[boundary], max_edge_length=_MISMATCH_EDGE_LENGTH)
-    params = _build_params(
-        asset_cache, defaults_edge_length=_SAFE_EDGE_LENGTH, refinements=[refinement]
+def test_refinements_are_not_checked(asset_cache, monkeypatch):
+    # Refinements are local by design: per-face values that would trip the gate or the coarse
+    # warning as defaults neither prompt nor warn.
+    monkeypatch.setattr("sys.stdin", StringIO(""))  # EOF would block if it wrongly prompted
+    messages = []
+    monkeypatch.setattr(
+        project_utils.log, "warning", lambda msg, *a, **k: messages.append(str(msg))
     )
-    assert enforce_length_scale_sanity(params) is False
-
-
-def test_refinement_geometry_accuracy_is_checked(asset_cache, monkeypatch):
-    # Per-face GeometryRefinement.geometry_accuracy too fine -> must block (not only defaults).
-    monkeypatch.setattr("sys.stdin", StringIO("n\n"))
-    boundary = asset_cache.project_entity_info.get_boundaries()[0]
+    boundaries = asset_cache.project_entity_info.get_boundaries()
     with fl.SI_unit_system:
-        refinement = fl.GeometryRefinement(faces=[boundary], geometry_accuracy=1e-5 * fl.u.m)
+        refinements = [
+            fl.SurfaceRefinement(faces=[boundaries[0]], max_edge_length=_MISMATCH_EDGE_LENGTH),
+            fl.GeometryRefinement(faces=[boundaries[0]], geometry_accuracy=1e-5 * fl.u.m),
+            fl.GeometryRefinement(faces=[boundaries[1]], geometry_accuracy=0.1 * fl.u.m),
+        ]
     params = _build_params(
-        asset_cache, defaults_edge_length=_SAFE_EDGE_LENGTH, refinements=[refinement]
+        asset_cache, defaults_edge_length=_SAFE_EDGE_LENGTH, refinements=refinements
     )
-    assert enforce_length_scale_sanity(params) is False
+    assert enforce_length_scale_sanity(params) is True
+    assert messages == []
 
 
 def test_no_meshing_is_noop(asset_cache, monkeypatch):
@@ -180,17 +177,6 @@ def test_geometry_accuracy_too_coarse_soft_warns_without_gate(asset_cache, monke
     )
     assert enforce_length_scale_sanity(params) is True
     assert any("coarse" in m for m in messages)
-
-
-def test_collect_length_settings_gathers_defaults_and_refinements(asset_cache):
-    boundary = asset_cache.project_entity_info.get_boundaries()[0]
-    with fl.SI_unit_system:
-        refinement = fl.SurfaceRefinement(faces=[boundary], max_edge_length=_MISMATCH_EDGE_LENGTH)
-    params = _build_params(
-        asset_cache, defaults_edge_length=_SAFE_EDGE_LENGTH, refinements=[refinement]
-    )
-    labels = [label for label, _ in _collect_length_settings(params.meshing)]
-    assert labels.count("max_edge_length") == 2  # defaults + one refinement
 
 
 def test_ratio_limit_constants():

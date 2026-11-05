@@ -59,6 +59,7 @@ class Surface(_SurfaceEntityBase):
         farfield_method: Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined", "wind-tunnel"] | None,
         global_bounding_box: BoundingBoxType | None,
         planar_face_tolerance: float | None,
+        symmetry_plane_tolerance: float | None,
         half_model_symmetry_plane_center_y: float | None,
         quasi_3d_symmetry_planes_center_y: tuple[float] | None,
         farfield_domain_type: str | None = None,
@@ -66,17 +67,21 @@ class Surface(_SurfaceEntityBase):
         """
         Check against the automated farfield method and
         determine if the current `Surface` will be deleted by the mesher.
+
+        ``symmetry_plane_tolerance`` is the absolute y = 0 tolerance in project length units, and
+        is the only tolerance the y = 0 decisions below consult. The quasi-3D planes sit at nonzero
+        y and are not a y = 0 decision, so they keep the ``planar_face_tolerance`` rule and carry
+        their own guard for it.
         """
         if entity_transformation_detected:
             # If transformed then the following check will no longer be accurate
             # since we do not know the final bounding box for each surface and global model.
             return False
 
-        if global_bounding_box is None or planar_face_tolerance is None or farfield_method is None:
-            # VolumeMesh or Geometry/SurfaceMesh with legacy schema.
+        if global_bounding_box is None or symmetry_plane_tolerance is None or farfield_method is None:
+            # VolumeMesh or Geometry/SurfaceMesh with legacy schema. The bounding box is still
+            # needed in its own right below; GeometryAI derives the tolerance without it.
             return False
-
-        length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
 
         if (
             farfield_domain_type in ("half_body_positive_y", "half_body_negative_y")
@@ -86,10 +91,10 @@ class Surface(_SurfaceEntityBase):
             y_min = self.private_attributes.bounding_box.ymin
             y_max = self.private_attributes.bounding_box.ymax
 
-            if farfield_domain_type == "half_body_positive_y" and y_max < -length_tolerance:
+            if farfield_domain_type == "half_body_positive_y" and y_max < -symmetry_plane_tolerance:
                 return True
 
-            if farfield_domain_type == "half_body_negative_y" and y_min > length_tolerance:
+            if farfield_domain_type == "half_body_negative_y" and y_min > symmetry_plane_tolerance:
                 return True
 
         if farfield_method in ("user-defined", "wind-tunnel"):
@@ -107,16 +112,18 @@ class Surface(_SurfaceEntityBase):
                 return False
             if farfield_domain_type is None and not _auto_symmetric_plane_exists_from_bbox(
                 global_bounding_box=global_bounding_box,
-                planar_face_tolerance=planar_face_tolerance,
+                symmetry_plane_tolerance=symmetry_plane_tolerance,
             ):
                 # Auto detection with no symmetry plane inferred from the bounding box.
                 return False
-            return self._lies_on(half_model_symmetry_plane_center_y, length_tolerance)
+            return self._lies_on(half_model_symmetry_plane_center_y, symmetry_plane_tolerance)
 
         if farfield_method in ("quasi-3d", "quasi-3d-periodic"):
-            if quasi_3d_symmetry_planes_center_y is None:
-                # Legacy schema.
+            if quasi_3d_symmetry_planes_center_y is None or planar_face_tolerance is None:
+                # Legacy schema, or no planar_face_tolerance to scale: these planes are not a
+                # y = 0 decision, so symmetry_plane_tolerance does not speak for them.
                 return False
+            length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
             for plane_center_y in quasi_3d_symmetry_planes_center_y:
                 if self._lies_on(plane_center_y, length_tolerance):
                     return True
@@ -174,14 +181,6 @@ class GhostSphere(_SurfaceEntityBase):
         return True
 
 
-def compute_bbox_tolerance(global_bounding_box: Any, planar_face_tolerance: float) -> tuple[float, float]:
-    """Compute the largest bounding-box dimension and the derived planar-face tolerance."""
-    largest_dimension = 0.0
-    for dim in range(3):
-        largest_dimension = max(largest_dimension, global_bounding_box[1][dim] - global_bounding_box[0][dim])
-    return largest_dimension, largest_dimension * planar_face_tolerance
-
-
 @final
 class GhostCircularPlane(_SurfaceEntityBase):
     """Ghost circular plane — symmetric plane existence depends on bounding box geometry."""
@@ -195,13 +194,15 @@ class GhostCircularPlane(_SurfaceEntityBase):
     def _get_existence_dependency(self, validation_info: Any) -> tuple[float, float, float, float]:
         y_max = validation_info.global_bounding_box[1][1]
         y_min = validation_info.global_bounding_box[0][1]
-        largest_dimension, tolerance = compute_bbox_tolerance(
-            validation_info.global_bounding_box, validation_info.planar_face_tolerance
-        )
-        return y_min, y_max, tolerance, largest_dimension
+        # largest_dimension is reported for the caller's message, which quotes the
+        # planar_face_tolerance rule when that is the one in force. The tolerance itself is
+        # already resolved, and under GeometryAI planar_face_tolerance may be absent entirely,
+        # so the dimension is taken on its own rather than as a factor of that product.
+        largest_dimension = validation_info.global_bounding_box.largest_dimension
+        return y_min, y_max, validation_info.symmetry_plane_tolerance, largest_dimension
 
     def exists(self, validation_info: Any) -> bool:
-        """For automated farfield, check mesher logic for symmetric plane existence."""
+        """False only when the mesher is known not to generate this plane; True when it will or cannot be ruled out."""
         if self.name != "symmetric":
             # Quasi-3D mode or user-named symmetry patch (exists by definition)
             return True
@@ -209,8 +210,10 @@ class GhostCircularPlane(_SurfaceEntityBase):
         if validation_info is None:
             raise ValueError("Validation info is required for GhostCircularPlane existence check.")
 
-        if validation_info.global_bounding_box is None:
-            # This likely means the user tries to use mesher on old cloud resources.
+        if validation_info.global_bounding_box is None or validation_info.symmetry_plane_tolerance is None:
+            # This likely means the user tries to use mesher on old cloud resources, or the mesher
+            # in force has no tolerance to judge the plane with (no `planar_face_tolerance` off
+            # GeometryAI; no `geometry_accuracy` on it, which is its own error).
             # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
 
@@ -222,9 +225,13 @@ class GhostCircularPlane(_SurfaceEntityBase):
         if validation_info.will_generate_forced_symmetry_plane():
             return True
 
+        if validation_info.geometry_moved_by_coordinate_system:
+            # The cached bounding box predates the body transformation, so it cannot rule the plane out.
+            return True
+
         return _auto_symmetric_plane_exists_from_bbox(
             global_bounding_box=validation_info.global_bounding_box,
-            planar_face_tolerance=validation_info.planar_face_tolerance,
+            symmetry_plane_tolerance=validation_info.symmetry_plane_tolerance,
         )
 
     def _per_entity_type_validation(self, param_info: Any) -> Self:

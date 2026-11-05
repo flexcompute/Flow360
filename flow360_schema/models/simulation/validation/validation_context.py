@@ -98,6 +98,29 @@ class FeatureUsageInfo:
                     self.bet_disk_count += 1
 
 
+def _deserialize_length(raw):
+    """Deserialize a raw length (``{"value": ..., "units": ...}``); ``None`` passes through."""
+    if raw is None:
+        return None
+    with DeserializationContext():
+        return TypeAdapter(Length.PositiveFloat64).validate_python(raw)
+
+
+def _lies_on_symmetry_plane(entity: Any, reach: float) -> bool:
+    """Whether a face group's cached bounding box lies entirely within ``reach`` of y = 0.
+
+    Containment, not intersection: a group merely crossing the plane is a body straddling it, not
+    a face on it. Same test as Surf360's ``detectSymmetryPatchIndices``.
+
+    A ``MirroredSurface``'s reflected extent is not cached here, so a coarse accuracy on a
+    mirrored group landing on the plane leaves this tolerance a lower bound. Stricter than the
+    mesher, never looser.
+    """
+    if getattr(entity, "private_attribute_entity_type_name", None) != "Surface":
+        return False
+    return entity._lies_on(0.0, reach)  # pylint: disable=protected-access
+
+
 class ParamsValidationInfo:
     """
     Model that provides the information for each individual validator that is out of their scope.
@@ -119,11 +142,13 @@ class ParamsValidationInfo:
         "global_bounding_box",
         "planar_face_tolerance",
         "geometry_accuracy",
+        "symmetry_plane_tolerance",
         "output_dict",
         "physics_model_dict",
         "half_model_symmetry_plane_center_y",
         "quasi_3d_symmetry_planes_center_y",
         "entity_transformation_detected",
+        "geometry_moved_by_coordinate_system",
         "to_be_generated_custom_volumes",
         "farfield_enclosed_entities",
         "root_asset_type",
@@ -260,11 +285,70 @@ class ParamsValidationInfo:
 
     @classmethod
     def _get_geometry_accuracy(cls, param_as_dict: dict):
-        raw = get_value_with_path(param_as_dict, ["meshing", "defaults", "geometry_accuracy"])
-        if raw is None:
+        return _deserialize_length(get_value_with_path(param_as_dict, ["meshing", "defaults", "geometry_accuracy"]))
+
+    def _get_geometry_ai_symmetry_tolerance(self, param_as_dict: dict) -> float | None:
+        """GeometryAI's y = 0 tolerance, in project length units, or ``None`` if it does not apply.
+
+        Mirrors Surf360's ``computeSymmetryTolerance``: the largest of the global geometry
+        accuracy and the local ``GeometryRefinement`` accuracies of the face groups lying on
+        y = 0. Each group is judged in the band its own accuracy sets, since a face captured that
+        coarsely cannot be tessellated closer to the plane than that.
+        """
+        if self.use_geometry_AI is not True:
             return None
-        with DeserializationContext():
-            return TypeAdapter(Length.PositiveFloat64).validate_python(raw)
+        if self.geometry_accuracy is None or self.project_length_unit is None:
+            return None
+
+        # Bounding boxes are stored in project length units; the accuracies carry their own units
+        tolerance = float((self.geometry_accuracy / self.project_length_unit).to("dimensionless"))
+        if self.entity_transformation_detected:
+            # The cached face group boxes are pre-transformation, so they cannot place a group on
+            # the plane. The global accuracy still floors the tolerance.
+            return tolerance
+
+        for refinement in get_value_with_path(param_as_dict, ["meshing", "refinements"]) or []:
+            if not isinstance(refinement, dict) or refinement.get("refinement_type") != "GeometryRefinement":
+                continue
+            local_accuracy = _deserialize_length(refinement.get("geometry_accuracy"))
+            if local_accuracy is None:
+                continue
+            local = float((local_accuracy / self.project_length_unit).to("dimensionless"))
+            # Only a coarser accuracy can widen the tolerance; skip the expansion otherwise
+            if local <= tolerance:
+                continue
+            entities = refinement.get("entities")
+            if not entities:
+                continue
+            expanded = self.expand_entity_list(
+                SimpleNamespace(
+                    stored_entities=entities.get("stored_entities", []),
+                    selectors=entities.get("selectors"),
+                )
+            )
+            if any(_lies_on_symmetry_plane(entity, local) for entity in expanded):
+                tolerance = local
+
+        return tolerance
+
+    def _get_symmetry_plane_tolerance(self, param_as_dict: dict) -> float | None:
+        """Absolute tolerance for the y = 0 symmetry decisions, in project length units.
+
+        GeometryAI's surface mesher derives it from geometry accuracy; every other mesher scales
+        the bounding box by ``planar_face_tolerance``, as before. Resolved once here so no
+        validator has to know which mesher is running.
+
+        ``None`` means the tolerance cannot be determined and the y = 0 checks that need it are
+        skipped. Under GeometryAI that is a missing ``geometry_accuracy`` or project length unit,
+        which the validator above already reports on its own — leaving that error the one the user
+        sees. Otherwise it is a missing bounding box or ``planar_face_tolerance``, the same
+        conditions those checks skipped on before the tolerance was resolved here.
+        """
+        if self.use_geometry_AI is True:
+            return self._get_geometry_ai_symmetry_tolerance(param_as_dict)
+        if self.global_bounding_box is None or self.planar_face_tolerance is None:
+            return None
+        return self.global_bounding_box.largest_dimension * self.planar_face_tolerance
 
     @classmethod
     def _get_root_asset_type(cls, param_as_dict: dict):
@@ -338,6 +422,22 @@ class ParamsValidationInfo:
             return True
 
         return False
+
+    @classmethod
+    def _get_geometry_moved_by_coordinate_system(cls, param_as_dict: dict):
+        """Whether a coordinate system moves a `GeometryBodyGroup`, which leaves the cached bounding box stale.
+
+        Coordinate systems on other entities (slices, points, refinement or rotation volumes) do not move
+        the meshed geometry, and mirroring only adds copies beside the originals.
+        """
+        coordinate_system_status_dict = get_value_with_path(
+            param_as_dict, ["private_attribute_asset_cache", "coordinate_system_status"]
+        )
+        return any(
+            entity_ref.get("entity_type") == "GeometryBodyGroup"
+            for assignment_group in (coordinate_system_status_dict or {}).get("assignments") or []
+            for entity_ref in assignment_group.get("entities") or []
+        )
 
     def _get_boundary_surface_ids(self, entity) -> set:
         """Extract boundary surface IDs from a CustomVolume entity, expanding selectors if needed."""
@@ -448,6 +548,9 @@ class ParamsValidationInfo:
             param_as_dict=param_as_dict
         )
         self.entity_transformation_detected = self._get_entity_transformation_detected(param_as_dict=param_as_dict)
+        self.geometry_moved_by_coordinate_system = self._get_geometry_moved_by_coordinate_system(
+            param_as_dict=param_as_dict
+        )
         self.root_asset_type = self._get_root_asset_type(param_as_dict=param_as_dict)
 
         self._entity_info, self._entity_registry = (
@@ -460,6 +563,8 @@ class ParamsValidationInfo:
 
         self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(param_as_dict=param_as_dict)
         self.farfield_enclosed_entities = self._get_farfield_enclosed_entities(param_as_dict=param_as_dict)
+        # After the registry: resolving a refinement's face groups needs expand_entity_list
+        self.symmetry_plane_tolerance = self._get_symmetry_plane_tolerance(param_as_dict=param_as_dict)
 
     def supports_farfield_domain_type(self) -> bool:
         """

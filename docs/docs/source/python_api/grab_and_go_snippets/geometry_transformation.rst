@@ -18,6 +18,7 @@ Notes
 - Use ``fl.create_draft(new_run_from=...)`` to create a draft context from a cloud asset (geometry, surface mesh, or volume mesh).
 - The ``face_grouping`` and ``edge_grouping`` parameters specify which grouping tags to use for entities (must match tags available on the geometry).
 - Use ``coordinate_systems.assign`` to attach a coordinate system to geometry entities (e.g., body groups).
+- Assigning a coordinate system to a geometry body group requires GeometryAI (``use_geometry_AI=True`` when running the case).
 - Coordinate system parameters such as ``angle_of_rotation``, ``translation``, and ``scale`` can be modified between runs to explore different configurations.
 - The ``get_by_name`` method retrieves an existing coordinate system for modification.
 

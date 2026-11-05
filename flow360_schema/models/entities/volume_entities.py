@@ -22,6 +22,7 @@ from flow360_schema.framework.entity.entity_operation import (
     TransformableEntity,
     _extract_rotation_matrix,
     _rotation_matrix_to_axis_angle,
+    _scale_length,
     _transform_direction,
     _transform_point,
     _validate_uniform_scale_and_transform_center,
@@ -214,7 +215,7 @@ class Box(TransformableEntity, MultiConstructorBaseModel, _VolumeEntityBase):
         # escapes the single-spelling guarantee that `_canonicalize_rotation` gives.
         new_axis, new_angle = canonicalize_axis_and_angle(Axis(tuple(new_axis)), new_angle)
 
-        new_size = self.size * uniform_scale
+        new_size = _scale_length(self.size, uniform_scale)
 
         return self.model_copy(
             update={
@@ -302,7 +303,7 @@ class Sphere(TransformableEntity, _VolumeEntityBase):
         transformed_axis = _transform_direction(axis_array, matrix)
         new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
 
-        new_radius = self.radius * uniform_scale
+        new_radius = _scale_length(self.radius, uniform_scale)
 
         return self.model_copy(
             update={
@@ -357,9 +358,9 @@ class Cylinder(TransformableEntity, _VolumeEntityBase):
         transformed_axis = _transform_direction(axis_array, matrix)
         new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
 
-        new_height = self.height * uniform_scale
-        new_outer_radius = self.outer_radius * uniform_scale
-        new_inner_radius = self.inner_radius * uniform_scale if self.inner_radius is not None else None
+        new_height = _scale_length(self.height, uniform_scale)
+        new_outer_radius = _scale_length(self.outer_radius, uniform_scale)
+        new_inner_radius = _scale_length(self.inner_radius, uniform_scale) if self.inner_radius is not None else None
 
         return self.model_copy(
             update={

@@ -108,7 +108,7 @@ Run the Case
 
 To run a case, first prepare a JSON input file, either manually or by using the fun3d_to_flow360.py script:
 
-.. code-block:: python
+.. code-block:: bash
 
    python3 /path/to/flow360/flow360client/fun3d_to_flow360.py 
    /path/to/fun3d.nml/path/to/hlcrm.mapbc /output/path/for/Flow360.json
@@ -154,7 +154,7 @@ The residuals history and total forces can be downloaded, respectively, using th
 
 Finally, you can download the surface forces by their component names using the following commands:
 
-.. code-block:: python
+.. code-block:: text
 
    flow360client.case.GetCaseSurfaceForcesByNames(caseId, <list of boundaryNames>)
 

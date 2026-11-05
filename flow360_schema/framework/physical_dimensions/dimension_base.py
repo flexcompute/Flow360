@@ -20,6 +20,7 @@ from .data_types import (
     ScalarFloat64,
     StrictlyIncreasingVector2Type,
     Vector2Type,
+    Vector3ArrayType,
     Vector3Type,
 )
 from .dimension_meta import PhysicalDimensionMeta
@@ -146,6 +147,12 @@ class PhysicalDimensionBase:
         """Variable-length array, all elements >= 0."""
         meta = cls._meta()
         return _compose_type(meta, NonNegativeArrayType, meta.validation_value_hook)
+
+    @classproperty
+    def Vector3Array(cls) -> type:
+        """Variable-length (N, 3) array of 3D vectors, sharing one display unit."""
+        meta = cls._meta()
+        return _compose_type(meta, Vector3ArrayType, meta.validation_value_hook)
 
 
 __all__ = ["PhysicalDimensionBase"]

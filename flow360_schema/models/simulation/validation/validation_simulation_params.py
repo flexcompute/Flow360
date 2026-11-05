@@ -10,6 +10,7 @@ from flow360_schema.framework.entity.entity_operation import (
     _is_uniform_scale,
 )
 from flow360_schema.framework.entity.entity_utils import is_exact_instance
+from flow360_schema.models.entities.base import _auto_detected_domain_type_from_bbox
 from flow360_schema.models.entities.volume_entities import (
     AxisymmetricBody,
     CustomVolume,
@@ -56,6 +57,8 @@ from flow360_schema.models.simulation.models.volume_models import (
 from flow360_schema.models.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
+    render_artifact_stem,
+    RenderOutput,
     SliceOutput,
     SurfaceOutput,
     TimeAverageIsosurfaceOutput,
@@ -423,6 +426,7 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
                 farfield_method=farfield_method,
                 global_bounding_box=param_info.global_bounding_box,
                 planar_face_tolerance=param_info.planar_face_tolerance,
+                symmetry_plane_tolerance=param_info.symmetry_plane_tolerance,
                 half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
                 quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
                 farfield_domain_type=param_info.farfield_domain_type,
@@ -434,10 +438,7 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
 
     if farfield_method == "auto":
         asset_boundary_entities += [
-            item
-            for item in ghost_entities
-            if item.name in ("farfield", "symmetric")
-            and (param_info.entity_transformation_detected or item.exists(param_info))
+            item for item in ghost_entities if item.name in ("farfield", "symmetric") and item.exists(param_info)
         ]
     elif farfield_method in ("quasi-3d", "quasi-3d-periodic"):
         asset_boundary_entities += [
@@ -447,25 +448,33 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
         if param_info.use_geometry_AI and param_info.is_beta_mesher:
             # Skip adding "symmetric" ghost if user geometry has y=0 surfaces
             user_sym_surfaces = find_user_symmetry_surfaces(
-                asset_boundary_entities,
-                param_info.global_bounding_box,
-                param_info.planar_face_tolerance,
+                asset_boundary_entities, param_info.symmetry_plane_tolerance
             )
             if len(user_sym_surfaces) == 0:
                 asset_boundary_entities += [
-                    item
-                    for item in ghost_entities
-                    if item.name == "symmetric"
-                    and (param_info.entity_transformation_detected or item.exists(param_info))
+                    item for item in ghost_entities if item.name == "symmetric" and item.exists(param_info)
                 ]
     elif farfield_method == "wind-tunnel":
-        if param_info.will_generate_forced_symmetry_plane():
-            asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]
+        asset_boundary_entities += [
+            item for item in ghost_entities if item.name == "symmetric" and item.exists(param_info)
+        ]
 
         wind_tunnel = next(z for z in params.meshing.volume_zones if isinstance(z, WindTunnelFarfield))
+        domain_type = wind_tunnel.domain_type
+        if (
+            domain_type is None
+            and not param_info.entity_transformation_detected
+            and param_info.global_bounding_box is not None
+            and param_info.symmetry_plane_tolerance is not None
+        ):
+            # Resolve wall validity to remove wrong-half tunnel side wall
+            domain_type = _auto_detected_domain_type_from_bbox(
+                global_bounding_box=param_info.global_bounding_box,
+                symmetry_plane_tolerance=param_info.symmetry_plane_tolerance,
+            )
         asset_boundary_entities += WindTunnelFarfield._get_valid_ghost_surfaces(
             wind_tunnel.floor_type.type_name,
-            wind_tunnel.domain_type,
+            domain_type,
         )
 
     return asset_boundary_entities, has_missing_private_attributes
@@ -798,11 +807,7 @@ def _check_complete_boundary_condition_and_unknown_surface(params, param_info):
 
     # Warn if multiple y=0 surfaces have different BC types
     if param_info.farfield_method == "user-defined":
-        sym_surfaces = find_user_symmetry_surfaces(
-            asset_boundary_entities,
-            param_info.global_bounding_box,
-            param_info.planar_face_tolerance,
-        )
+        sym_surfaces = find_user_symmetry_surfaces(asset_boundary_entities, param_info.symmetry_plane_tolerance)
         if len(sym_surfaces) > 1:
             sym_names = {s.name for s in sym_surfaces}
             bc_types = {
@@ -1016,6 +1021,26 @@ def _check_duplicate_isosurface_names(outputs):
                         f"`{entity.name}` already exists, please rename the isosurface."
                     )
                 isosurface_time_avg_names.append(entity.name)
+    return outputs
+
+
+def _check_unique_render_output_names(outputs):
+    """Render artifacts are keyed by their sanitized stem, so two names sharing one overwrite each
+    other (FXC-9050)."""
+    if outputs is None:
+        return outputs
+    name_by_stem = {}
+    for output_index, output in enumerate(outputs):
+        if not isinstance(output, RenderOutput):
+            continue
+        stem = render_artifact_stem(output.name)
+        if stem in name_by_stem:
+            raise ValueError(
+                f"In `outputs`[{output_index}] {output.output_type}: "
+                f"Output name {output.name} publishes as `{stem}`, the same as "
+                f"{name_by_stem[stem]}. Output names must be unique among all render outputs."
+            )
+        name_by_stem[stem] = output.name
     return outputs
 
 

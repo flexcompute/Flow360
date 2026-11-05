@@ -54,23 +54,47 @@ def _check_axis_is_orthogonal(axis_pair: tuple[Axis, Axis]) -> tuple[Axis, Axis]
     return (a1, tuple(a2))  # type: ignore[return-value]
 
 
-def _auto_symmetric_plane_exists_from_bbox(
+def _auto_detected_domain_type_from_bbox(
     *,
     global_bounding_box: BoundingBoxType,
-    planar_face_tolerance: float,
-) -> bool:
+    symmetry_plane_tolerance: float,
+) -> str:
     """
-    Determine whether automated farfield logic will generate a `symmetric` plane
-    from global bounding box extents and planar-face tolerance.
+    Domain type the mesher's bounding-box auto-detection will infer when
+    ``domain_type`` is left unset.
+
+    ``symmetry_plane_tolerance`` is the absolute y = 0 tolerance in project length units, from
+    ``ParamsValidationInfo.symmetry_plane_tolerance``.
     """
     y_min = global_bounding_box[0][1]
     y_max = global_bounding_box[1][1]
-    tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
 
-    positive_half = abs(y_min) < tolerance < y_max
-    negative_half = abs(y_max) < tolerance and y_min < -tolerance
+    if abs(y_min) < symmetry_plane_tolerance < y_max:
+        return "half_body_positive_y"
+    if abs(y_max) < symmetry_plane_tolerance and y_min < -symmetry_plane_tolerance:
+        return "half_body_negative_y"
+    return "full_body"
 
-    return positive_half or negative_half
+
+def _auto_symmetric_plane_exists_from_bbox(
+    *,
+    global_bounding_box: BoundingBoxType,
+    symmetry_plane_tolerance: float,
+) -> bool:
+    """
+    Determine whether automated farfield logic will generate a `symmetric` plane
+    from global bounding box extents and the y = 0 tolerance.
+
+    ``symmetry_plane_tolerance`` is the absolute y = 0 tolerance in project length units, from
+    ``ParamsValidationInfo.symmetry_plane_tolerance``.
+    """
+    return (
+        _auto_detected_domain_type_from_bbox(
+            global_bounding_box=global_bounding_box,
+            symmetry_plane_tolerance=symmetry_plane_tolerance,
+        )
+        != "full_body"
+    )
 
 
 OrthogonalAxes = Annotated[tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]

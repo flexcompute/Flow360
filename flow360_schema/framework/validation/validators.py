@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 import pydantic as pd
 
-from .context import ALL, get_validation_info, get_validation_levels
+from .context import ALL, RELEVANT_FOR_ATTRIBUTE, get_validation_info, get_validation_levels
 
 _MISSING_SIGNATURE = object()
 
@@ -70,16 +70,29 @@ def context_validator(
     """Decorator to conditionally run a validator based on validation context.
 
     The decorated validator only runs if the current validation level matches
-    *context* or is ALL.
+    *context* or is ALL, and whatever it raises is tagged as relevant for *context*
+    so that a caller validating every level at once can filter by it. The
+    model-validator counterpart of ``ContextField``, which does both for a field.
     """
 
     def decorator(func: Any) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
             current_levels = get_validation_levels()
-            if current_levels is None or any(lvl in (context, ALL) for lvl in current_levels):
+            if current_levels is not None and not any(lvl in (context, ALL) for lvl in current_levels):
+                return self
+            try:
                 return func(self, *args, **kwargs)
-            return self
+            except pd.ValidationError:
+                # Already a structured error with its own locations; wrapping it here would
+                # flatten it and lose them.
+                raise
+            except ValueError as error:
+                # A model-level validator's error has an empty location, so the field metadata
+                # that normally says which levels an error belongs to has nothing to attach to.
+                # This decorator is where the level is declared, so stamp it here instead.
+                setattr(error, RELEVANT_FOR_ATTRIBUTE, [context])
+                raise
 
         return wrapper
 

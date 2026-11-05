@@ -24,6 +24,7 @@ from flow360_schema.models.entities.output_entities import (
     Point,
     PointArray,
     PointArray2D,
+    PointGroup,
     Slice,
 )
 from flow360_schema.models.entities.volume_entities import (
@@ -403,6 +404,7 @@ __all__ = [
     "migration",
     "Water",
     "PointArray2D",
+    "PointGroup",
     "WallRotation",
     "UserVariable",
     "math",

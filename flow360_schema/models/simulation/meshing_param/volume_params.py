@@ -19,7 +19,6 @@ from flow360_schema.models.entities.surface_entities import (
     MirroredSurface,
     Surface,
     WindTunnelGhostSurface,
-    compute_bbox_tolerance,
 )
 from flow360_schema.models.entities.volume_entities import (
     AxisymmetricBody,
@@ -678,16 +677,13 @@ class _FarfieldBase(Flow360BaseModel):
         if (
             value not in ("half_body_positive_y", "half_body_negative_y")
             or validation_info.global_bounding_box is None
-            or validation_info.planar_face_tolerance is None
+            or validation_info.symmetry_plane_tolerance is None
         ):
             return value
 
         y_min = validation_info.global_bounding_box[0][1]
         y_max = validation_info.global_bounding_box[1][1]
-
-        largest_dimension, tolerance = compute_bbox_tolerance(
-            validation_info.global_bounding_box, validation_info.planar_face_tolerance
-        )
+        tolerance = validation_info.symmetry_plane_tolerance
 
         # Check if model crosses Y=0
         crossing = y_min < -tolerance and y_max > tolerance
@@ -699,12 +695,20 @@ class _FarfieldBase(Flow360BaseModel):
                 and validation_info.project_length_unit is not None
                 and wrong_side_overhang * validation_info.project_length_unit < 4 * validation_info.geometry_accuracy
             ):
-                # planar_face_tolerance is unitless and scaled by largest_dimension
-                suggested_tol = wrong_side_overhang / largest_dimension
+                if validation_info.use_geometry_AI:
+                    # planar_face_tolerance no longer moves the y=0 tolerance under GeometryAI;
+                    # the global geometry_accuracy is the knob that does.
+                    remedy = (
+                        "Consider raising the global `geometry_accuracy` to just above "
+                        f"{wrong_side_overhang * validation_info.project_length_unit:.2g}."
+                    )
+                else:
+                    # planar_face_tolerance is unitless and scaled by largest_dimension
+                    suggested_tol = wrong_side_overhang / validation_info.global_bounding_box.largest_dimension
+                    remedy = f"Consider setting `planar_face_tolerance` to just above {suggested_tol:.2g}."
                 add_validation_warning(
                     f"Geometry crosses Y=0 by {wrong_side_overhang:.2g} on the opposite side of `{value}`. "
-                    "The mesher might be unable to generate the symmetry plane properly. "
-                    f"Consider setting `planar_face_tolerance` to just above {suggested_tol:.2g}."
+                    "The mesher might be unable to generate the symmetry plane properly. " + remedy
                 )
             return value
         # If not crossing, check if it matches the requested domain
@@ -1043,10 +1047,10 @@ class WindTunnelFarfield(_FarfieldAllowingEnclosedEntities):
         """
         Returns the symmetry plane boundary surface for half body domains.
         """
-        if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
+        if self.domain_type not in (None, "half_body_positive_y", "half_body_negative_y"):
             raise Flow360ValueError(
                 "Symmetry plane for wind tunnel farfield is only supported when domain_type "
-                "is `half_body_positive_y` or `half_body_negative_y`."
+                "is `half_body_positive_y`, `half_body_negative_y`, or None (auto detection)."
             )
         return GhostCircularPlane(name="symmetric", private_attribute_id="symmetric")
 

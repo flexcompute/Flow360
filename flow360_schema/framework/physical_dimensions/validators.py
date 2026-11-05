@@ -2,13 +2,16 @@
 Composable validation functions
 
 Each function implements a single validation criterion and can be composed
-to create complex validation logic. All validators are pure Python with no
-external dependencies.
+to create complex validation logic. These are pure Python apart from the numpy
+fast path in `finite_or_raise`, which array-shaped fields depend on to stay
+cheap; numpy is already a hard dependency of the package through unyt.
 """
 
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import Any
+
+import numpy as np
 
 
 def positive(value: float) -> float:
@@ -27,17 +30,38 @@ def non_negative(value: float) -> float:
     return value
 
 
+def _iter_leaf_components(value: Any) -> Iterator[float]:
+    """Yield every scalar leaf of a scalar, vector, or nested array value.
+
+    Recursing rather than iterating one level is what lets a shape like `(N, 3)` be
+    checked at all: its top-level items are rows, not numbers. Everything reaching here
+    has already been through `to_unyt`, so the leaves are numeric.
+    """
+    if not isinstance(value, Iterable):
+        yield float(value)
+        return
+    try:
+        items = tuple(value)
+    except TypeError:
+        # numpy 0-d arrays register as Iterable but are scalar; treat as one component
+        yield float(value)  # type: ignore[arg-type]
+        return
+    for item in items:
+        yield from _iter_leaf_components(item)
+
+
 def finite_or_raise(value: float | tuple[float, ...], name: str) -> float | tuple[float, ...]:
-    """Reject non-finite (NaN/Inf) components in a scalar or vector/array value."""
-    if isinstance(value, Iterable):
-        try:
-            components: tuple[float, ...] = tuple(value)
-        except TypeError:
-            # numpy 0-d arrays register as Iterable but are scalar; treat as one component
-            components = (float(value),)  # type: ignore[arg-type]
+    """Reject non-finite (NaN/Inf) components in a scalar, vector or nested array value.
+
+    Every dimensioned field passes through here, so the numpy fast path is what keeps a
+    large array cheap: walking the leaves in Python costs ~23 ms for a 10k-row (N, 3)
+    field against ~0.01 ms for `np.isfinite`.
+    """
+    if isinstance(value, np.ndarray):
+        all_finite = bool(np.isfinite(value).all())
     else:
-        components = (value,)
-    if not all(math.isfinite(component) for component in components):
+        all_finite = all(math.isfinite(component) for component in _iter_leaf_components(value))
+    if not all_finite:
         raise ValueError(
             f"{name} must be finite (no NaN/Inf); got non-finite component(s): {value}. "
             "A required numeric input was likely left blank or partial."
@@ -140,6 +164,23 @@ def array_shape(value: Any) -> tuple[float, ...]:
     return result
 
 
+def vector3_array_shape(value: Any) -> Any:
+    """Validate a non-empty (N, 3) array of 3-component vectors.
+
+    Composed values always arrive here as a rectangular numpy array: unyt builds the
+    array before any validator runs, and a ragged input fails there with numpy's own
+    error. So the shape answers the question in one step, and reporting it beats a row
+    index that could only ever be 0. Returns `value` unchanged -- the composer discards
+    validator return values, so materializing the rows would be a throwaway copy.
+    """
+    shape = np.shape(value)
+    if shape and shape[0] == 0:
+        raise ValueError("Array of vectors must be non-empty")
+    if len(shape) != 2 or shape[1] != 3:
+        raise ValueError(f"Value must be an (N, 3) array of 3-component vectors, got shape {shape}")
+    return value
+
+
 def positive_array(value: tuple[float, ...]) -> tuple[float, ...]:
     """Validate all array elements > 0."""
     for x in value:
@@ -167,6 +208,7 @@ __all__ = [
     "strictly_increasing",
     "positive_strictly_increasing",
     "array_shape",
+    "vector3_array_shape",
     "positive_array",
     "non_negative_array",
 ]

@@ -6,13 +6,17 @@ from unittest.mock import MagicMock, patch
 import pydantic as pd
 import pytest
 import unyt as u
-from flow360_schema.models.entities.surface_entities import ImportedSurface
+from flow360_schema.models.entities.surface_entities import ImportedSurface, Surface
+from flow360_schema.models.entity_info import GeometryEntityInfo
 
 import flow360 as fl
 from flow360 import log
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project import Project, ProjectMeta, ProjectTree
-from flow360.component.project_utils import set_up_params_for_uploading
+from flow360.component.project_utils import (
+    _update_entity_grouping_tags,
+    set_up_params_for_uploading,
+)
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.web import draft as draft_module
@@ -807,6 +811,35 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
         new_params = set_up_params_for_uploading(
             geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
         )
+
+
+def test_standalone_faces_do_not_conflict_with_grouping_tag():
+    # An STL face carries no `faceName`, so under the `faceName` grouping the geometry
+    # pipeline emits it as a `__standalone__` Surface inside the same group.
+    inlet = Surface(
+        name="Inlet",
+        private_attribute_id="Inlet",
+        private_attribute_tag_key="faceName",
+        private_attribute_sub_components=["body00001_face00001"],
+    )
+    stl_face = Surface(
+        name="body",
+        private_attribute_id="geo-2d31a911_1_body",
+        private_attribute_tag_key="__standalone__",
+        private_attribute_sub_components=["body"],
+    )
+    entity_info = GeometryEntityInfo(
+        face_ids=["body00001_face00001", "body"],
+        face_attribute_names=["faceName"],
+        grouped_faces=[[inlet, stl_face]],
+        face_group_tag="faceId",
+    )
+    with fl.SI_unit_system:
+        params = fl.SimulationParams(models=[fl.Wall(surfaces=[inlet, stl_face])])
+
+    updated = _update_entity_grouping_tags(entity_info, params)
+
+    assert updated.face_group_tag == "faceName"
 
 
 @pytest.mark.usefixtures("s3_download_override")

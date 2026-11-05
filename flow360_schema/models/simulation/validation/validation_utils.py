@@ -101,6 +101,7 @@ def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) ->
             planar_face_tolerance=param_info.planar_face_tolerance,
             half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+            symmetry_plane_tolerance=param_info.symmetry_plane_tolerance,
             farfield_domain_type=param_info.farfield_domain_type,
         ):
             deleted_boundaries.append(surface.name)
@@ -137,6 +138,7 @@ def check_deleted_surface_pair(value, param_info):
             planar_face_tolerance=param_info.planar_face_tolerance,
             half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+            symmetry_plane_tolerance=param_info.symmetry_plane_tolerance,
             farfield_domain_type=param_info.farfield_domain_type,
         ):
             deleted_boundaries.append(surface.name)
@@ -191,11 +193,20 @@ def check_symmetric_boundary_existence(stored_entities, param_info):
 
         if not item.exists(param_info):
             y_min, y_max, tolerance, largest_dimension = item._get_existence_dependency(param_info)
+            if param_info.use_geometry_AI:
+                # GeometryAI: the tolerance is the geometry accuracy on the plane, so quoting
+                # planar_face_tolerance would point the user at a knob that no longer applies.
+                tolerance_msg = f"tolerance = {tolerance:.2g} (from `geometry_accuracy`)"
+            else:
+                tolerance_msg = (
+                    f"tolerance = {param_info.planar_face_tolerance:.2g} x {largest_dimension:.2g}"
+                    + f" = {tolerance:.2g}"
+                )
             error_msg = (
                 "`symmetric` boundary will not be generated: "
                 + f"model spans: [{y_min:.2g}, {y_max:.2g}], "
-                + f"tolerance = {param_info.planar_face_tolerance:.2g} x {largest_dimension:.2g}"
-                + f" = {tolerance:.2g}."
+                + tolerance_msg
+                + "."
             )
 
             raise ValueError(error_msg)
@@ -203,15 +214,18 @@ def check_symmetric_boundary_existence(stored_entities, param_info):
     return stored_entities
 
 
-def find_user_symmetry_surfaces(boundaries, global_bounding_box, planar_face_tolerance):
-    """Return Surface entities that lie on the y=0 symmetry plane (bounding box within tolerance)."""
-    if not global_bounding_box:
+def find_user_symmetry_surfaces(boundaries, symmetry_plane_tolerance):
+    """Return Surface entities that lie on the y=0 symmetry plane (bounding box within tolerance).
+
+    ``symmetry_plane_tolerance`` is the absolute y = 0 tolerance in project length units, from
+    ``ParamsValidationInfo.symmetry_plane_tolerance``.
+    """
+    if symmetry_plane_tolerance is None:
         return []
-    tol = global_bounding_box.largest_dimension * (planar_face_tolerance if planar_face_tolerance is not None else 1e-6)
     return [
         b
         for b in boundaries
-        if isinstance(b, Surface) and b._lies_on(0, tol)  # pylint: disable=protected-access
+        if isinstance(b, Surface) and b._lies_on(0, symmetry_plane_tolerance)  # pylint: disable=protected-access
     ]
 
 
@@ -249,11 +263,7 @@ def remap_symmetric_ghost_entity(value, param_info):  # pylint: disable=too-many
     except (ValueError, KeyError, AttributeError):
         return value
 
-    sym_surfaces = find_user_symmetry_surfaces(
-        boundaries,
-        param_info.global_bounding_box,
-        param_info.planar_face_tolerance,
-    )
+    sym_surfaces = find_user_symmetry_surfaces(boundaries, param_info.symmetry_plane_tolerance)
     if not sym_surfaces:
         return value
 
@@ -454,3 +464,24 @@ def get_surface_full_name(entity, context: str = "force distribution output") ->
             f"Unsupported entity type '{type(entity).__name__}' for {context}. Only Surface entities are supported."
         )
     return entity.full_name
+
+
+def warn_if_string_expression_is_in_solver_units(value: Any, *, field_description: str, solver_unit: str) -> None:
+    """
+    Warn that a legacy string expression is read in solver units.
+
+    The string form is the only one that can vary in space, and it is not unit-aware: whatever it
+    evaluates to reaches the solver verbatim, so a user who writes the same number they would have
+    written with units attached silently gets a different physical value.
+    """
+    is_string_expression = isinstance(value, str) or (
+        isinstance(value, tuple) and all(isinstance(component, str) for component in value)
+    )
+    if not is_string_expression:
+        return
+    add_validation_warning(
+        f"{field_description} is set to a string expression, which is not unit-aware. "
+        f"Its result is interpreted in solver units, nondimensionalized by {solver_unit}. "
+        "The coordinates `x`, `y` and `z` used inside the expression are nondimensionalized "
+        "by the mesh unit."
+    )

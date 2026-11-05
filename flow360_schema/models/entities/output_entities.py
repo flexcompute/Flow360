@@ -3,17 +3,21 @@
 
 from __future__ import annotations
 
+import csv
+import warnings
 from typing import Any, Literal
 
 import pydantic as pd
 import unyt as u
 
+from flow360_schema.exceptions import Flow360FileError, Flow360ValueError
 from flow360_schema.framework.base_model import Flow360BaseModel
 from flow360_schema.framework.entity.entity_base import EntityBase
 from flow360_schema.framework.entity.entity_operation import (
     TransformableEntity,
     _transform_direction,
     _transform_point,
+    _transform_points,
 )
 from flow360_schema.framework.entity.entity_utils import generate_uuid
 from flow360_schema.framework.entity.geometric_types import Axis
@@ -295,6 +299,18 @@ class Point(TransformableEntity, EntityBase):
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     location: Length.Vector3 = pd.Field(description="The coordinate of the point.")  # type: ignore[valid-type]
 
+    @property
+    def _monitor_key_names(self) -> list[str]:
+        """The `monitorLocations` keys this entity writes, in the order it writes them.
+
+        The solver receives one flat dict of monitors per probe output, so an entity
+        standing for several points expands into several keys. Two entities that expand
+        onto the same key would silently share one monitor, which is why the probe-output
+        validator compares these instead of raw entity names, and why the translator
+        derives its keys from here rather than spelling the convention out a second time.
+        """
+        return [self.name]
+
     def _apply_transformation(self, matrix: NDArray) -> Point:
         """Apply 3x4 transformation matrix, returning new transformed instance."""
         import numpy as np
@@ -303,6 +319,232 @@ class Point(TransformableEntity, EntityBase):
         new_location_array = _transform_point(location_array, matrix)
         new_location = type(self.location)(new_location_array, self.location.units)  # type: ignore[attr-defined, misc]
         return self.model_copy(update={"location": new_location})
+
+
+def _coordinate_column_indices(
+    file_path: str, header: list[str], coordinate_columns: tuple[str, str, str], delimiter: str
+) -> tuple[int, ...]:
+    """Locate the three named coordinate columns in a CSV header row."""
+    if len(set(coordinate_columns)) != len(coordinate_columns):
+        raise Flow360ValueError(
+            f"`coordinate_columns` {list(coordinate_columns)} names the same column more than once, "
+            f"so two axes would read one column. Name three distinct columns."
+        )
+
+    # Only a repeat among the requested names is ambiguous. An export's other duplicate
+    # columns -- the empty trailing pair a spreadsheet likes to add, most of all -- are
+    # never read, so rejecting the file over them would refuse a file that reads fine.
+    repeated = sorted({column for column in coordinate_columns if header.count(column) > 1})
+    if repeated:
+        raise Flow360FileError(
+            f"{file_path}: header repeats the column name(s) {repeated}, so a coordinate column "
+            f"cannot be identified unambiguously. Rename the repeats and try again."
+        )
+
+    missing = [column for column in coordinate_columns if column not in header]
+    if missing:
+        raise Flow360FileError(
+            f"{file_path}: coordinate column(s) {missing} not found; the header is {header} "
+            f"(delimiter={delimiter!r}). If the file uses a different separator, pass `delimiter`."
+        )
+
+    return tuple(header.index(column) for column in coordinate_columns)
+
+
+class PointGroup(TransformableEntity, EntityBase):
+    """
+    :class:`PointGroup` class for defining many monitor points under a single name.
+
+    Example
+    -------
+
+    Import a set of probe locations from a CSV export. This is what the class is for:
+    a file of experimental probe coordinates becomes one entity instead of one entity
+    per row.
+
+    >>> group = fl.PointGroup.from_csv(
+    ...     "probes.csv",
+    ...     name="Rake A",
+    ...     unit=fl.u.mm,
+    ...     coordinate_columns=("x_coord", "y_coord", "z_coord"),
+    ... )
+    >>> fl.ProbeOutput(name="probes", entities=[group], output_fields=["Cp"])
+
+    Or list the coordinates directly:
+
+    >>> fl.PointGroup(
+    ...     name="Rake A",
+    ...     locations=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]] * fl.u.m,
+    ... )
+
+    ====
+    """
+
+    private_attribute_entity_type_name: Literal["PointGroup"] = pd.Field("PointGroup", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+    locations: Length.Vector3Array = pd.Field(description="The coordinates of the points in the group.")  # type: ignore[valid-type]
+
+    @pd.field_validator("locations", mode="after")
+    @classmethod
+    def _reject_duplicate_locations(cls, value: Any) -> Any:
+        """Reject repeated coordinates.
+
+        Probing one coordinate twice produces two identical monitors, so a repeat is
+        always a mistake in the input rather than something to honour. The rule lives
+        here and not on the `Vector3Array` type because it is about what this class
+        models -- a list of velocities, or a path that revisits a point, would be
+        entitled to repeat.
+        """
+        import numpy as np
+
+        rows = np.asarray(value.value)
+        _, inverse, counts = np.unique(rows, axis=0, return_inverse=True, return_counts=True)
+        repeated = np.nonzero(counts > 1)[0]
+        if repeated.size == 0:
+            return value
+
+        shown = [
+            f"rows {np.nonzero(inverse == group)[0].tolist()} all equal "
+            f"{tuple(rows[np.nonzero(inverse == group)[0][0]].tolist())}"
+            for group in repeated[:3]
+        ]
+        remainder = "" if repeated.size <= 3 else f", and {repeated.size - 3} further repeated coordinate(s)"
+        raise ValueError(
+            f"`locations` must not repeat a coordinate: {'; '.join(shown)}{remainder}. "
+            "Probing the same coordinate twice yields nothing; remove the repeats "
+            "(`PointGroup.from_csv` drops them for you)."
+        )
+
+    @classmethod
+    def from_csv(
+        cls,
+        file_path: str,
+        *,
+        name: str,
+        unit: Any,
+        coordinate_columns: tuple[str, str, str] | None = None,
+        delimiter: str = ",",
+    ) -> PointGroup:
+        """Build a :class:`PointGroup` from the coordinates in a CSV file.
+
+        The shape of the file is stated by the caller, never guessed. Pass
+        ``coordinate_columns`` and the first row is read as a header from which exactly
+        those three columns are taken; omit it and the file is read as headerless rows
+        of exactly three columns. Columns that are not selected are ignored, so an
+        export carrying a ``name`` or ``id`` column needs no preparation.
+
+        Exact duplicate coordinates are dropped in first-occurrence order and reported
+        as a ``UserWarning``, since a repeated probe location yields nothing.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to the CSV file. Read as ``utf-8-sig``, so a spreadsheet export that
+            starts with a byte-order mark is read the same as plain UTF-8.
+        name : str
+            Name of the resulting group. Monitor keys are ``{name}_{index}``.
+        unit : unyt.Unit
+            Unit of every coordinate in the file, for example ``fl.u.mm``. The file
+            carries no unit of its own, so this is required.
+        coordinate_columns : tuple[str, str, str], optional
+            Header names of the x, y and z columns, which must be three distinct names.
+            Columns the header repeats but these do not name are never read. Omit for a
+            headerless file.
+        delimiter : str, default ","
+            Field separator, for exports that use ``;`` or a tab.
+
+        Returns
+        -------
+        :class:`PointGroup`
+            A group holding one point per surviving row.
+
+        Example
+        -------
+        >>> fl.PointGroup.from_csv(
+        ...     "probes.csv",
+        ...     name="Rake A",
+        ...     unit=fl.u.mm,
+        ...     coordinate_columns=("x_coord", "y_coord", "z_coord"),
+        ... )
+
+        A headerless file of exactly three columns needs nothing but the unit:
+
+        >>> fl.PointGroup.from_csv("bare.csv", name="Rake A", unit=fl.u.mm)
+        """
+        with open(file_path, newline="", encoding="utf-8-sig") as csv_file:
+            reader = csv.reader(csv_file, delimiter=delimiter)
+            # `line_num` is the file line the record ends on, captured per row so every
+            # message points at the line the user sees in their editor. Rows the reader
+            # yields as `[]` are blank lines and carry nothing; a row of bare delimiters
+            # is `["", "", ""]`, which is three missing coordinates and survives to fail.
+            numbered_rows = [(reader.line_num, row) for row in reader if row]
+
+        if not numbered_rows:
+            raise Flow360FileError(f"{file_path}: file has no rows.")
+
+        # With named columns the first row is the header, which fixes both the coordinate
+        # positions and the width every later row must match. Without them the file is
+        # headerless and every row is exactly the three coordinates.
+        first_row = numbered_rows[0][1]
+        column_indices = (
+            _coordinate_column_indices(file_path, first_row, coordinate_columns, delimiter)
+            if coordinate_columns is not None
+            else (0, 1, 2)
+        )
+        expected_column_count = len(first_row) if coordinate_columns is not None else 3
+        data_rows = numbered_rows[1:] if coordinate_columns is not None else numbered_rows
+
+        if not data_rows:
+            raise Flow360FileError(f"{file_path}: file has a header row but no data rows.")
+
+        coordinates: list[tuple[float, ...]] = []
+        seen: set[tuple[float, ...]] = set()
+        duplicate_lines: list[int] = []
+        for line_number, row in data_rows:
+            if len(row) != expected_column_count:
+                raise Flow360FileError(
+                    f"{file_path} line {line_number}: expected {expected_column_count} column(s), "
+                    f"got {len(row)} (delimiter={delimiter!r}). If the file uses a different "
+                    f"separator, pass `delimiter`."
+                )
+            try:
+                coordinate = tuple(float(row[index]) for index in column_indices)
+            except ValueError as error:
+                raise Flow360FileError(f"{file_path} line {line_number}: {error}.") from error
+
+            if coordinate in seen:
+                duplicate_lines.append(line_number)
+                continue
+            seen.add(coordinate)
+            coordinates.append(coordinate)
+
+        if duplicate_lines:
+            listed = ", ".join(str(line) for line in duplicate_lines[:10])
+            elided = "" if len(duplicate_lines) <= 10 else ", ..."
+            warnings.warn(
+                f"`from_csv` dropped {len(duplicate_lines)} duplicate row(s) of {file_path} "
+                f"at line(s) {listed}{elided}; {len(coordinates)} point(s) kept.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        # `private_attribute_entity_type_name` has a default; mypy cannot see defaults
+        # declared through `pd.Field` without the pydantic plugin.
+        return cls(name=name, locations=u.unyt_array(coordinates, unit))  # type: ignore[call-arg]
+
+    @property
+    def _monitor_key_names(self) -> list[str]:
+        """The `monitorLocations` keys this entity writes. See :attr:`Point._monitor_key_names`."""
+        return [f"{self.name}_{index}" for index in range(len(self.locations))]
+
+    def _apply_transformation(self, matrix: NDArray) -> PointGroup:
+        """Apply 3x4 transformation matrix, returning new transformed instance."""
+        import numpy as np
+
+        locations_array = np.asarray(self.locations.value)  # type: ignore[attr-defined]
+        new_locations_array = _transform_points(locations_array, matrix)
+        new_locations = type(self.locations)(new_locations_array, self.locations.units)  # type: ignore[attr-defined, misc]
+        return self.model_copy(update={"locations": new_locations})
 
 
 class PointArray(TransformableEntity, EntityBase):
@@ -330,6 +572,11 @@ class PointArray(TransformableEntity, EntityBase):
     start: Length.Vector3 = pd.Field(description="The starting point of the line.")  # type: ignore[valid-type]
     end: Length.Vector3 = pd.Field(description="The end point of the line.")  # type: ignore[valid-type]
     number_of_points: int = pd.Field(ge=2, description="Number of points along the line.")
+
+    @property
+    def _monitor_key_names(self) -> list[str]:
+        """The `monitorLocations` keys this entity writes. See :attr:`Point._monitor_key_names`."""
+        return [f"{self.name}_{index}" for index in range(self.number_of_points)]
 
     def _apply_transformation(self, matrix: NDArray) -> PointArray:
         """Apply 3x4 transformation matrix, returning new transformed instance."""

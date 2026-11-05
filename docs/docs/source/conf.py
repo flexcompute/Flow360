@@ -51,6 +51,30 @@ def _flow360_source_paths() -> list[str]:
 for _flow360_path in _flow360_source_paths():
     sys.path.insert(0, _flow360_path)
 
+
+def _require_report_docs() -> None:
+    """Stop early, with a pointer to the fix, when the report pages are absent.
+
+    The Reports pages (GUI guide, user guide, API reference) live in the flex
+    repo and are copied into this tree by ``docs/tools/fetch_report_docs.py``
+    before every build; see docs/README.md, "Report docs fetched from flex".
+    Without them the toctree entries pointing at them would fail the -W build
+    with a far less obvious "nonexisting document" warning.
+    """
+    from sphinx.errors import ConfigError
+
+    marker = Path(__file__).resolve().parent / "python_api" / "API_reference" / "reports.rst"
+    if not marker.exists():
+        raise ConfigError(
+            "The report docs pages are missing from the Sphinx source tree "
+            f"({marker}). Run `python3 docs/tools/fetch_report_docs.py` from "
+            "flex/public/Flow360 (add `--from-local <flex checkout>` to use a local flex "
+            "clone) and build again."
+        )
+
+
+_require_report_docs()
+
 # -- General configuration
 add_module_names = False  # Remove namespaces from class/method signatures
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
@@ -243,6 +267,8 @@ linkcheck_ignore = [
     r"https://transitionmodeling\.larc\.nasa\.gov/.*",
     r"https://hiliftpw-ftp\.larc\.nasa\.gov/.*",
     r"https://www\.grc\.nasa\.gov/.*",
+    # MIT ESP site is down (connect timeouts, Sep 10 2026 22:00 UTC); remove when it returns
+    r"https://acdl\.mit\.edu/ESP/.*",
 ]
 linkcheck_timeout = 120  # Seconds per link; NTRS ignored above so CI stays bounded
 linkcheck_retries = 2  # Number of retries for failed links

@@ -164,6 +164,9 @@ class MeshingDefaults(Flow360BaseModel):
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
         " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
+        " The GeometryAI surface mesher does not use it: there the y = 0 symmetry plane follows"
+        " :py:attr:`geometry_accuracy` instead, so that a coarsely captured face is still"
+        " recognized as lying on the plane."
         " This can not be overridden per face.",
     )
     sliding_interface_tolerance: pd.NonNegativeFloat = ConditionalField(
@@ -249,10 +252,30 @@ class MeshingDefaults(Flow360BaseModel):
 
     baffle_face_treatment: Literal["remove", "thicken", "default"] = pd.Field(
         "default",
-        description="Treatment of baffle faces (faces with both sides facing fluid) detected during hidden"
-        + "geometry removal: 'remove' deletes them, while 'thicken' inflates them into a thin closed shell."
-        + "'default' applies no special baffle handling. This only takes effect when hidden "
-        + "geometry removal is performed, and is only supported when using geometryAI. ",
+        description="Treatment of baffle faces (faces with both sides facing fluid) detected during "
+        + "hidden geometry removal: 'remove' deletes them, 'thicken' inflates them into a thin closed "
+        + "shell, and 'default' applies no special baffle handling. This only takes effect when hidden "
+        + "geometry removal is performed, and is only supported when using geometryAI.",
+    )
+
+    baffle_thicken_outward: pd.NonNegativeFloat | None = pd.Field(
+        None,
+        description="How far a thickened baffle face's shell extends past the original surface on its "
+        + "more exposed side (the side with more open space around it), in multiples of geometry_accuracy. "
+        + "Which side is more exposed is inferred from the surrounding geometry (if the two sides are "
+        + "equally exposed, the total is split evenly instead). Set to 0 to put the whole shell on the "
+        + "inward side. The two extents must sum to at least 4.0. Defaults to 2.0, and can be overridden "
+        + "per face with :class:`~flow360.GeometryRefinement`. Only allowed when baffle_face_treatment is "
+        + "'thicken', and only supported when using geometryAI.",
+    )
+
+    baffle_thicken_inward: pd.NonNegativeFloat | None = pd.Field(
+        None,
+        description="How far a thickened baffle face's shell extends past the original surface on its less "
+        + "exposed side, in multiples of geometry_accuracy. Set to 0 to put the whole shell on the outward "
+        + "side. The two extents must sum to at least 4.0. Defaults to 2.0, and can be overridden per face "
+        + "with :class:`~flow360.GeometryRefinement`. Only allowed when baffle_face_treatment is 'thicken', "
+        + "and only supported when using geometryAI.",
     )
 
     min_passage_size: Length.PositiveFloat64 | None = pd.Field(
@@ -329,6 +352,21 @@ class MeshingDefaults(Flow360BaseModel):
         )
         return data
 
+    @pd.model_validator(mode="after")
+    def _reject_baffle_thickness_without_thicken(self):
+        """Shell extents are meaningless unless the defaults thicken baffles; the same rule applies per
+        face group in GeometryRefinement. Skipped without remove_hidden_geometry, whose own error is
+        the one to report then."""
+        if not self.remove_hidden_geometry or self.baffle_face_treatment == "thicken":
+            return self
+        for field in ("baffle_thicken_outward", "baffle_thicken_inward"):
+            if getattr(self, field) is not None:
+                raise ValueError(
+                    f"'{field}' can only be specified when 'baffle_face_treatment' is 'thicken', "
+                    f"but it is '{self.baffle_face_treatment}'."
+                )
+        return self
+
     @contextual_field_validator("number_of_boundary_layers", mode="after")
     @classmethod
     def invalid_number_of_boundary_layers(cls, value, param_info: ParamsValidationInfo):
@@ -384,6 +422,8 @@ class MeshingDefaults(Flow360BaseModel):
         "remove_hidden_geometry",
         "min_passage_size",
         "baffle_face_treatment",
+        "baffle_thicken_outward",
+        "baffle_thicken_inward",
         mode="after",
     )
     @classmethod
@@ -413,17 +453,22 @@ class MeshingDefaults(Flow360BaseModel):
         return self
 
     @pd.model_validator(mode="after")
-    def validate_baffle_face_treatment_requires_remove_hidden_geometry(self):
-        """Ensure a non-default baffle_face_treatment is only specified when remove_hidden_geometry
-        is True, since baffle classification only runs as part of hidden geometry removal."""
-        if self.baffle_face_treatment != "default" and not self.remove_hidden_geometry:
+    def validate_baffle_settings_require_remove_hidden_geometry(self):
+        """Baffle settings require remove_hidden_geometry, where baffle classification runs.
+        The treatment gate on the extents is _reject_baffle_thickness_without_thicken."""
+        if self.remove_hidden_geometry:
+            return self
+        if self.baffle_face_treatment != "default":
             raise ValueError("'baffle_face_treatment' can only be specified when 'remove_hidden_geometry' is True.")
+        for field in ("baffle_thicken_outward", "baffle_thicken_inward"):
+            if getattr(self, field) is not None:
+                raise ValueError(f"'{field}' can only be specified when 'remove_hidden_geometry' is True.")
         return self
 
-    # Size ordering (geometry_accuracy <= sealing_size <= min_passage_size) is not validated here:
-    # all three are effectively per-face (overridable via GeometryRefinement), so the defaults only
-    # constrain faces that use them. That check lives in MeshingParams, which knows the faces and
-    # refinements.
+    # Size ordering (geometry_accuracy <= sealing_size <= min_passage_size) and the baffle shell
+    # thickness floor are not validated here: these settings are effectively per-face (overridable
+    # via GeometryRefinement), so the defaults only constrain faces that use them. Those checks live
+    # in MeshingParams, which knows the faces and refinements.
 
     @contextual_field_validator("volume_edge_growth_rate", mode="after")
     @classmethod

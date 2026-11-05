@@ -8,6 +8,7 @@ from flow360_schema.framework.expression import StringExpression
 from flow360_schema.models.entities.surface_entities import (
     MirroredSurface,
     Surface,
+    WindTunnelGhostSurface,
 )
 from flow360_schema.models.entities.volume_entities import (
     CustomVolume,
@@ -95,14 +96,14 @@ class UserDefinedDynamic(Flow360BaseModel):
         + ":code:`state[0]`, :code:`state[1]`, ..., respectively. These expressions follows similar guidelines as "
         + ":ref:`user Defined Expressions<UserDefinedExpressions>`."
     )
-    input_boundary_patches: EntityList[Surface, MirroredSurface] | None = pd.Field(
+    input_boundary_patches: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] | None = pd.Field(
         None,
         description="The list of :class:`~flow360.Surface` entities to which the input variables belongs. "
         + "If multiple boundaries are specified then the summation over the boundaries are used as the input. "
         + "For input variables that already specified the source in the name (like bet_NUM_torque) "
         + "this entry does not have any effect.",
     )
-    output_target: Cylinder | GenericVolume | Surface | CustomVolume | None = pd.Field(
+    output_target: Cylinder | GenericVolume | Surface | CustomVolume | WindTunnelGhostSurface | None = pd.Field(
         None,
         description="The target to which the output variables belong to. For example this can be the rotating "
         + "volume zone name. Only one output target is supported per user defined dynamics instance. Only "
@@ -126,6 +127,7 @@ class UserDefinedDynamic(Flow360BaseModel):
             farfield_method=param_info.farfield_method,
             global_bounding_box=param_info.global_bounding_box,
             planar_face_tolerance=param_info.planar_face_tolerance,
+            symmetry_plane_tolerance=param_info.symmetry_plane_tolerance,
             half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
             farfield_domain_type=param_info.farfield_domain_type,

@@ -303,10 +303,16 @@ class FieldMaterial(MaterialBase):
         description="Scalar field applied to the surface via the colormap"
     )
     min: ValueOrExpression[UnytQuantity | float] = pd.Field(
-        description="Reference min value (in solver units) representing the left boundary of the colormap"
+        description=(
+            "Reference min value representing the left boundary of the colormap. Give it with units on a "
+            "dimensional field; a plain number is read in the output field's units."
+        )
     )
     max: ValueOrExpression[UnytQuantity | float] = pd.Field(
-        description="Reference max value (in solver units) representing the right boundary of the colormap"
+        description=(
+            "Reference max value representing the right boundary of the colormap. Give it with units on a "
+            "dimensional field; a plain number is read in the output field's units."
+        )
     )
     colormap: list[ColormapKey] = pd.Field(
         description=(
@@ -353,11 +359,11 @@ class FieldMaterial(MaterialBase):
     def _preprocess_range_with_unit_system(cls, value, info: pd.ValidationInfo):
         if is_variable_with_unit_system_as_units(value):
             return value
-        if info.data.get("field") is None:
-            # `field` validation failed.
+        if info.data.get("output_field") is None:
+            # `output_field` validation failed.
             raise ValueError("The output field is invalid and therefore unit inference is not possible.")
         units = value["units"]
-        field = info.data["field"]
+        field = info.data["output_field"]
         value_dimensions = get_input_value_dimensions(value=field)
         value = infer_units_by_unit_system(value=value, value_dimensions=value_dimensions, unit_system=units)
         return value

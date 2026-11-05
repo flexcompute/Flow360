@@ -1,9 +1,10 @@
 """Meshing related parameters for volume and surface mesher."""
 
 import logging
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 import pydantic as pd
+from pydantic_core import InitErrorDetails
 from flow360_schema.framework.base_model import Flow360BaseModel
 from flow360_schema.models.entities.volume_entities import (
     AxisymmetricBody,
@@ -29,7 +30,8 @@ from flow360_schema.models.simulation.meshing_param.meshing_specs import (
     VolumeMeshingDefaults,
 )
 from flow360_schema.models.simulation.meshing_param.meshing_validators import (
-    validate_geometry_ai_size_ordering,
+    geometry_ai_size_ordering_violation,
+    validate_baffle_thicken_total,
     validate_snappy_uniform_refinement_entities,
 )
 from flow360_schema.models.simulation.meshing_param.volume_params import (
@@ -55,8 +57,12 @@ from flow360_schema.models.simulation.validation.validation_context import (
     add_validation_warning,
     contextual_field_validator,
     contextual_model_validator,
+    get_validation_info,
 )
-from flow360_schema.models.simulation.validation.validation_utils import EntityUsageMap
+from flow360_schema.models.simulation.validation.validation_utils import (
+    EntityUsageMap,
+    customize_model_validator_error,
+)
 from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
@@ -557,7 +563,8 @@ class MeshingParams(Flow360BaseModel):
     @contextual_model_validator(mode="after")
     def _warn_geometry_refinement_settings_without_remove_hidden_geometry(self) -> Self:
         """Warn when any GeometryRefinement sets hidden-geometry-removal-only options
-        (min_passage_size, baffle_face_treatment) without enabling remove_hidden_geometry."""
+        (min_passage_size, baffle_face_treatment, baffle shell extents) without enabling
+        remove_hidden_geometry."""
         if self.defaults.remove_hidden_geometry:
             return self
         refinements = [r for r in self.refinements or [] if isinstance(r, GeometryRefinement)]
@@ -568,6 +575,11 @@ class MeshingParams(Flow360BaseModel):
         baffle_names = [r.name for r in refinements if r.baffle_face_treatment not in (None, "default")]
         if baffle_names:
             clauses.append(f"'baffle_face_treatment' on {', '.join(baffle_names)}")
+        thickness_names = [
+            r.name for r in refinements if r.baffle_thicken_outward is not None or r.baffle_thicken_inward is not None
+        ]
+        if thickness_names:
+            clauses.append(f"'baffle_thicken_outward'/'baffle_thicken_inward' on {', '.join(thickness_names)}")
         if clauses:
             add_validation_warning(
                 "The following GeometryRefinements will have no effect because "
@@ -576,9 +588,81 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @pd.model_validator(mode="after")
-    def _check_geometry_refinement_size_ordering(self) -> Self:
-        """Ensure each GeometryRefinement's effective sizes are mutually consistent."""
+    def _check_baffle_thicken_total_per_face(self) -> Self:
+        """Check baffle shell thickness face by face.
+
+        To resolve faces: refinements apply in list order, each overriding only the fields it sets,
+        so one can set a face's treatment and another an extent. Faces no refinement touches use
+        the defaults, whose total is therefore checked unless every face is covered (coverage is
+        only known with validation info; without it the defaults are checked).
+        """
+        if not self.defaults.remove_hidden_geometry:
+            return self
+        param_info = get_validation_info()
+
+        # Fold the refinements onto the faces they cover (Boxes disallowed)
+        folded: dict[str, dict[str, Any]] = {}  # face -> the baffle fields set on it
+        setters: dict[str, list[str]] = {}  # face -> names of the refinements that set them
+        extent_faces: dict[str, list[str]] = {}  # refinement name -> faces it sets an extent on
         for refinement in self.refinements or []:
+            if not isinstance(refinement, GeometryRefinement):
+                continue
+            overrides = {
+                field: getattr(refinement, field)
+                for field in ("baffle_face_treatment", "baffle_thicken_outward", "baffle_thicken_inward")
+                if getattr(refinement, field) is not None
+            }
+            if not overrides:
+                continue
+            entities = (  # without validation info, the explicit face list
+                param_info.expand_entity_list(refinement.entities)
+                if param_info is not None
+                else refinement.entities.stored_entities or []
+            )
+            for face in dict.fromkeys(entity.name for entity in entities if not isinstance(entity, Box)):
+                folded.setdefault(face, {}).update(overrides)
+                setters.setdefault(face, []).append(refinement.name)
+                if overrides.keys() != {"baffle_face_treatment"}:
+                    extent_faces.setdefault(refinement.name, []).append(face)
+
+        thickening = {
+            face
+            for face, fields in folded.items()
+            if fields.get("baffle_face_treatment", self.defaults.baffle_face_treatment) == "thicken"
+        }
+        for name, faces in extent_faces.items():
+            if thickening.isdisjoint(faces):
+                add_validation_warning(
+                    f"GeometryRefinement '{name}' sets a baffle thicken extent but none of its faces "
+                    "ends up with 'baffle_face_treatment' 'thicken', so the extent has no effect."
+                )
+        for face, fields in folded.items():
+            if face not in thickening:
+                continue
+            names = ", ".join(f"'{name}'" for name in dict.fromkeys(setters[face]))
+            validate_baffle_thicken_total(
+                fields.get("baffle_thicken_outward", self.defaults.baffle_thicken_outward),
+                fields.get("baffle_thicken_inward", self.defaults.baffle_thicken_inward),
+                f"on face '{face}' from GeometryRefinement {names} (including values inherited from defaults)",
+            )
+
+        # The defaults' own total matters if some face falls through to them, or if we cannot tell
+        if self.defaults.baffle_face_treatment == "thicken":
+            all_boundaries = param_info.get_boundary_names() if param_info is not None else set()
+            if not (all_boundaries and all_boundaries <= folded.keys()):
+                validate_baffle_thicken_total(
+                    self.defaults.baffle_thicken_outward, self.defaults.baffle_thicken_inward, "in MeshingDefaults"
+                )
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_geometry_refinement_size_ordering(self) -> Self:
+        """Ensure each GeometryRefinement's effective sizes are mutually consistent.
+
+        Every offending refinement gets its own error, located on the field the message is about.
+        """
+        line_errors: list[InitErrorDetails] = []
+        for index, refinement in enumerate(self.refinements or []):
             if not isinstance(refinement, GeometryRefinement):
                 continue
             geometry_accuracy = (
@@ -598,12 +682,27 @@ class MeshingParams(Flow360BaseModel):
                     if refinement.min_passage_size is not None
                     else self.defaults.min_passage_size
                 )
-            validate_geometry_ai_size_ordering(
+            violation = geometry_ai_size_ordering_violation(
                 geometry_accuracy=geometry_accuracy,
                 sealing_size=sealing_size,
                 min_passage_size=min_passage_size,
                 location=f"for GeometryRefinement '{refinement.name}'",
             )
+            if violation is None:
+                continue
+            field, message = violation
+            line_errors.append(
+                InitErrorDetails(
+                    type="value_error",
+                    # A refinement is a tagged-union item, so pydantic puts its tag after the index;
+                    # with the same loc this error is indistinguishable from a field error there.
+                    loc=("refinements", index, refinement.refinement_type, field),
+                    input=getattr(refinement, field),
+                    ctx={"error": ValueError(message)},
+                )
+            )
+        if line_errors:
+            raise pd.ValidationError.from_exception_data(type(self).__name__, line_errors)
         return self
 
     @contextual_model_validator(mode="after")
@@ -637,13 +736,18 @@ class MeshingParams(Flow360BaseModel):
             return self
 
         min_passage_size = self.defaults.min_passage_size if self.defaults.remove_hidden_geometry else None
-        validate_geometry_ai_size_ordering(
+        violation = geometry_ai_size_ordering_violation(
             geometry_accuracy=self.defaults.geometry_accuracy,
             sealing_size=self.defaults.sealing_size,
             min_passage_size=min_passage_size,
             location="in meshing defaults",
         )
-        return self
+        if violation is None:
+            return self
+        field, message = violation
+        raise customize_model_validator_error(
+            self, ("defaults", field), message, input_value=getattr(self.defaults, field)
+        )
 
     @contextual_model_validator(mode="after")
     def _warn_multi_zone_remove_hidden_geometry(self, param_info: ParamsValidationInfo) -> Self:
