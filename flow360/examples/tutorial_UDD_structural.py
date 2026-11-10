@@ -1,0 +1,15 @@
+"""
+tutorial of UDD forces and moments example
+"""
+
+from .base_test_case import Asset, BaseTestCase, DownloadableAssets
+
+
+class TutorialUDDStructural(BaseTestCase):
+    name = "tutorialUDDStructural"
+
+    downloadable_assets = DownloadableAssets(
+        mesh=Asset(
+            "https://simcloud-public-1.s3.amazonaws.com/examples/rotatingPlate/rotatingPlate.cgns"
+        ),
+    )

@@ -1,0 +1,38 @@
+XROTOR VERSION:  7.54
+single_polar_test
+!         Rho          Vso          Rmu           Alt
+   1.00      342.00            0.17170E-04   2000.0
+!         Rad          Vel          Adv          Rake
+  3.81       1.0            4.23765e-3       0.0000
+!         XI0          XIW
+  0.13592       0.0000
+!  Naero
+     1
+!   Xisection
+  0.5
+!       A0deg        dCLdA        CLmax         CLmin
+  -6.5           4.00       1.2500     -0.0000
+!  dCLdAstall     dCLstall      Cmconst         Mcrit
+  0.10000      0.10000     -0.10000      0.75000
+!       CDmin      CLCDmin     dCDdCL^2
+  0.075000E-01  0.00000      0.40000E-02
+!       REref        REexp
+  0.30000E+06 -0.70000
+!LVDuct  LDuct   LWind
+  T       F       F
+!   II Nblds
+    10     3
+!         r/R          C/R     Beta0deg         Ubody
+0.1	0.113428403	30.0	0
+0.2	0.113428403	25.0	0
+0.3	0.113428403	20.0	0
+0.4	0.113428403	15.0	0
+0.5	0.113428403	10.0	0
+0.6	0.113428403	5.0	0
+0.7	0.113428403	2.0	0
+0.8	0.113428403	0.0	0
+0.9	0.113428403	-2.0	0
+1.0	0.113428403	-5.0	0
+!      URDuct
+   1.0000
+

@@ -1,0 +1,33 @@
+genericbg.inp.  Generic Blade Geometry Input File
+NSEG
+  1
+CUTOUT
+  3.0
+SL(ISEG)
+ 27.0
+CHORD(ISEG)
+  2.0  2.0
+ELOFSG(ISEG) - (elastic axis offset)
+  0.0  0.0
+SWEEPD(ISEG)
+  0.0
+TWRD (Blade root twist at zero collective in degrees)
+  6.5
+TWSTGD(ISEG
+ -9.0
+ANHD(ISEG)
+  0.0
+THIKND(ISEG)
+  0.12
+KFLAP(ISEG)
+ 0
+FLAPND(ISEG)
+ 0.0
+FLHNGE(ISEG)
+ 0.0
+FLDEFL(ISEG)
+ 0.0
+NCAM
+ 0
+NCHORD  NSPAN  ICOS
+  1      50     0

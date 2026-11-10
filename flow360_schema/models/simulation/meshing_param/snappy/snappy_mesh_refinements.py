@@ -1,0 +1,159 @@
+"""Reinements for surface meshing"""
+
+from abc import ABCMeta
+from typing import Annotated, Literal
+
+import pydantic as pd
+import unyt as u
+from typing_extensions import Self
+
+from flow360_schema.framework.base_model import Flow360BaseModel
+from flow360_schema.framework.entity.entity_list import EntityList
+from flow360_schema.framework.physical_dimensions import Angle, Length
+from flow360_schema.models.entities.geometry_entities import GeometryBodyGroup
+from flow360_schema.models.entities.surface_entities import Surface
+from flow360_schema.models.simulation.meshing_param.volume_params import UniformRefinement
+
+
+class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
+    """
+    Base refinement for snappyHexMesh.
+    """
+
+    min_spacing: Length.PositiveFloat64 | None = pd.Field(None)
+    max_spacing: Length.PositiveFloat64 | None = pd.Field(None)
+    proximity_spacing: Length.PositiveFloat64 | None = pd.Field(None)
+
+    @pd.model_validator(mode="after")
+    def _check_spacing_order(self) -> Self:
+        if self.min_spacing is None or self.max_spacing is None:
+            return self
+        if self.min_spacing > self.max_spacing:
+            raise ValueError("Minimum spacing must be lower than maximum spacing.")
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_proximity_spacing(self) -> Self:
+        if self.min_spacing is None or self.proximity_spacing is None:
+            return self
+        if self.proximity_spacing > self.min_spacing:
+            raise ValueError(
+                f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing "
+                + f"({self.min_spacing})."
+            )
+        return self
+
+
+class BodyRefinement(SnappyEntityRefinement):
+    """
+    Refinement for snappyHexMesh body (searchableSurfaceWithGaps).
+    """
+
+    refinement_type: Literal["SnappyBodyRefinement"] = pd.Field("SnappyBodyRefinement", frozen=True)
+    gap_resolution: Length.NonNegativeFloat64 | None = pd.Field(None)
+    entities: EntityList[GeometryBodyGroup] = pd.Field(alias="bodies")
+
+    @pd.model_validator(mode="after")
+    def _check_parameters_given(self) -> Self:
+        if (
+            self.gap_resolution is None
+            and self.min_spacing is None
+            and self.max_spacing is None
+            and self.proximity_spacing is None
+        ):
+            raise ValueError(
+                "No refinement (gap_resolution, min_spacing, max_spacing, proximity_spacing)"
+                " specified in `BodyRefinement`."
+            )
+
+        return self
+
+
+class RegionRefinement(SnappyEntityRefinement):
+    """
+    Refinement for the body region in snappyHexMesh.
+    """
+
+    min_spacing: Length.PositiveFloat64 = pd.Field()
+    max_spacing: Length.PositiveFloat64 = pd.Field()
+    refinement_type: Literal["SnappySurfaceRefinement"] = pd.Field("SnappySurfaceRefinement", frozen=True)
+    entities: EntityList[Surface] = pd.Field(alias="regions")
+
+
+class SurfaceEdgeRefinement(Flow360BaseModel):
+    """
+    Edge refinement for bodies and regions in snappyHexMesh.
+    """
+
+    refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field("SnappySurfaceEdgeRefinement", frozen=True)
+    spacing: Length.PositiveArray | Length.PositiveFloat64 | None = pd.Field(
+        None, description="Spacing on and close to the edges. Defaults to default min_spacing."
+    )
+    distances: Length.PositiveArray | None = pd.Field(
+        None, description="Distance from the edge where the spacing will be applied."
+    )
+    min_elem: pd.NonNegativeInt | None = pd.Field(
+        None, description="Minimum number of elements on the edge to apply the edge refinement."
+    )
+    min_len: Length.NonNegativeFloat64 | None = pd.Field(
+        None, description="Minimum length of the edge to apply edge refinement."
+    )
+    included_angle: Angle.PositiveFloat64 = pd.Field(
+        150 * u.deg,
+        description="If the angle between two elements is less than this value, the edge is extracted as a feature.",
+    )
+    entities: EntityList[GeometryBodyGroup, Surface] = pd.Field(None)
+    retain_on_smoothing: bool = pd.Field(True, description="Maintain the edge when smoothing is applied.")
+    geometric_test_only: bool = pd.Field(
+        False,
+        description="If enabled, only geometric tests are performed on the edge (region edge will be ignored).",
+    )
+
+    @pd.model_validator(mode="after")
+    def _check_spacing_format(self) -> Self:
+        distances_state = None
+        spacing_state = None
+        if self.distances is not None:
+            distances_state = (True, len(self.distances))
+        else:
+            distances_state = (False, 0)
+        # TODO: Note to self:
+        # TODO: Maybe we can come up with a more efficient and elegant way of differentiating Array from scalar
+        try:
+            spacing_state = (True, len(self.spacing))
+        except TypeError:
+            # spacing is a scalar
+            spacing_state = (False, 1)
+
+        if (distances_state[0] and spacing_state[0] and (spacing_state[1] != distances_state[1])) or (
+            distances_state[0] is not spacing_state[0]
+        ):
+            raise ValueError(
+                f"When using a distance spacing specification both spacing ({self.spacing}) and distances "
+                + f"({self.distances}) fields must be arrays and the same length."
+            )
+        return self
+
+    @pd.field_validator("spacing", "distances", mode="after")
+    @classmethod
+    def _check_spacings_increasing(cls, value):
+        if value is not None:
+            if isinstance(value.tolist(), list) and (sorted(value.tolist()) != value.tolist()):
+                raise ValueError("Spacings and distances must be increasing arrays.")
+        return value
+
+    @pd.field_validator("spacing", "distances", mode="before")
+    @classmethod
+    def _convert_list_to_unyt_array(cls, value):
+        # Only coalesce lists of unyt quantities (e.g., [4*u.mm, 5*u.mm]) into a
+        # single unyt_array. Bare numeric lists (e.g., [0.004]) must NOT be wrapped
+        # so that the schema type validator can attach the correct SI unit.
+        if isinstance(value, list) and all(isinstance(v, u.unyt_quantity) for v in value):
+            return u.unyt_array(value)
+        return value
+
+
+SnappySurfaceRefinementTypes = Annotated[
+    BodyRefinement | SurfaceEdgeRefinement | RegionRefinement | UniformRefinement,
+    pd.Field(discriminator="refinement_type"),
+]

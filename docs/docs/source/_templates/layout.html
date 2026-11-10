@@ -1,0 +1,13 @@
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    var observer = new MutationObserver(function(mutations) {
+        const dark = document.documentElement.dataset.theme == 'dark';
+        const logo = document.querySelector('.navbar-brand img');
+    });
+    observer.observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+});
+</script>
+{% endblock %}

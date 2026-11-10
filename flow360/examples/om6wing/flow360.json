@@ -1,0 +1,65 @@
+{
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "24.2.0b2",
+    "geometry": {
+        "refArea": {
+            "value": 1.15315084119231,
+            "units": "m**2"
+        },
+        "momentLength": {
+            "value": [
+                1.47602,
+                0.801672958512342,
+                1.47602
+            ],
+            "units": "m"
+        },
+        "meshUnit": {
+            "value": 1.0,
+            "units": "m"
+        }
+    },
+    "fluidProperties": {
+        "modelType": "AirDensity",
+        "temperature": {
+            "value": 288.15,
+            "units": "K"
+        },
+        "density": {
+            "value": 1.225,
+            "units": "kg/m**3"
+        }
+    },
+    "boundaries": {
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
+        },
+        "3": {
+            "type": "Freestream",
+            "name": "freestream"
+        },
+        "1": {
+            "type": "NoSlipWall",
+            "name": "wing"
+        }
+    },
+    "timeStepping": {
+        "maxPseudoSteps": 500,
+        "modelType": "Steady",
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "freestream": {
+        "modelType": "FromVelocity",
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0,
+        "velocity": {
+            "value": 286.0,
+            "units": "m/s"
+        }
+    },
+    "hash": "a544649dbfdac16b0f892704a63f11cc51ca6e572af526433165090a7fb87670"
+}

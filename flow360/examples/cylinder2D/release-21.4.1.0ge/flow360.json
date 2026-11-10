@@ -1,0 +1,97 @@
+{
+	"geometry": {
+		"refArea": 20,
+		"momentCenter": [
+			0,
+			0,
+			0
+		],
+		"momentLength": [
+			1,
+			1,
+			1
+		]
+	},
+	"volumeOutput": {
+		"outputFormat": "paraview",
+		"primitiveVars": true,
+		"vorticity": true,
+		"residualNavierStokes": true,
+		"residualTurbulence": true,
+		"T": true,
+		"s": false,
+		"Cp": true,
+		"mut": true,
+		"mutRatio": false
+	},
+	"surfaceOutput": {
+		"outputFormat": "paraview",
+		"primitiveVars": false,
+		"Cp": true,
+		"Cf": false,
+		"CfVec": false,
+		"yPlus": false,
+		"wallDistance": false,
+		"Mach": false
+	},
+	"sliceOutput": {
+		"outputFormat": "paraview",
+		"slices": [
+			{
+				"sliceName": "sliceTest",
+				"sliceNormal": [
+					0,
+					1,
+					0
+				],
+				"sliceOrigin": [
+					0.7165,
+					0.27772,
+					0.0179426
+				]
+			}
+		]
+	},
+	"navierStokesSolver": {
+		"tolerance": 1e-9,
+		"linearIterations": 25,
+		"kappaMUSCL": -1
+	},
+	"turbulenceModelSolver": {
+		"modelType": "None",
+		"tolerance": 1e-8,
+		"linearIterations": 15,
+		"kappaMUSCL": -1
+	},
+	"freestream": {
+		"Reynolds": 50,
+		"Mach": 0.1,
+		"Temperature": 288.15,
+		"alphaAngle": 0,
+		"betaAngle": 0
+	},
+	"boundaries": {
+		"fluid/wall": {
+			"type": "NoSlipWall"
+		},
+		"fluid/farfield": {
+			"type": "Freestream"
+		},
+		"fluid/periodic_0_l": {
+			"type": "SlipWall"
+		},
+		"fluid/periodic_0_r": {
+			"type": "SlipWall"
+		}
+	},
+	"timeStepping": {
+		"timeStepSize": 2,
+		"maxPhysicalSteps": 20,
+		"maxPseudoSteps": 40,
+		"CFL": {
+			"initial": 100,
+			"final": 100,
+			"rampSteps": 5
+		}
+	}
+}

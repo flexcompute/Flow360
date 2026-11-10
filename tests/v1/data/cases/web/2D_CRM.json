@@ -1,0 +1,100 @@
+{
+    "boundaries": {
+        "fluid/farfield": {
+            "type": "Freestream"
+        },
+        "fluid/flap": {
+            "type": "NoSlipWall"
+        },
+        "fluid/slat": {
+            "type": "NoSlipWall"
+        },
+        "fluid/symmetric-1": {
+            "type": "SlipWall"
+        },
+        "fluid/symmetric-2": {
+            "type": "SlipWall"
+        },
+        "fluid/wing": {
+            "type": "NoSlipWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.2,
+        "Reynolds": 5000000.0,
+        "Temperature": 272.1,
+        "alphaAngle": 16,
+        "betaAngle": 0
+    },
+    "geometry": {
+        "momentCenter": [
+            0.25,
+            0,
+            0
+        ],
+        "momentLength": [
+            1,
+            1,
+            1
+        ],
+        "refArea": 0.01
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-11,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": 0.33,
+        "linearSolverConfig": {
+            "maxIterations": 35
+        },
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.01,
+        "updateJacobianFrequency": 4
+    },
+    "surfaceOutput": {
+        "Cf": true,
+        "CfVec": true,
+        "Cp": true,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "wallDistance": false,
+        "yPlus": true
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 300,
+            "initial": 20,
+            "rampSteps": 500
+        },
+        "maxPhysicalSteps": 1,
+        "maxPseudoSteps": 3000,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1,
+        "linearSolverConfig": {
+            "maxIterations": 25
+        },
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.01,
+        "updateJacobianFrequency": 4
+    },
+    "volumeOutput": {
+        "Cp": true,
+        "Mach": true,
+        "T": false,
+        "VelocityRelative": false,
+        "mut": true,
+        "mutRatio": false,
+        "nuHat": false,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "qcriterion": true,
+        "residualNavierStokes": true,
+        "residualTurbulence": true,
+        "s": false,
+        "vorticity": true
+    }
+}

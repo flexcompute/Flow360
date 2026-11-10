@@ -1,0 +1,6 @@
+# flex ref that docs/tools/fetch_report_docs.py fetches the report documentation
+# pages from (folder frontend/flow360-python-plugin/flow360-report-docs).
+# master and the release candidate under development track main. Pin a retired
+# release candidate to a commit SHA in a one-off PR on that branch only; the pin
+# is never forward-ported. See docs/README.md, "Report docs fetched from flex".
+main

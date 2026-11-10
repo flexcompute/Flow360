@@ -1,0 +1,97 @@
+/*
+ * Flex self-hosted docs version switcher (product-agnostic base styles).
+ * ---------------------------------------------------------------------------
+ * Product-local: ships in Flow360's own docs tree (`_static/`), synced
+ * one-way to flex via Copybara under the existing `flex/public/Flow360/**`
+ * allowlist. Edit in compute, not flex.
+ *
+ * Theme-neutral by design: inherits the host theme's fonts and colors and
+ * draws its border/background from `currentColor` + `transparent` so it reads
+ * correctly in both light and dark themes without hardcoding a palette.
+ * Loaded per product via html_css_files (see the product conf.py).
+ *
+ * Two variants (set by the base JS as a `--<variant>` modifier class):
+ *   --block  : sidebar / mobile-drawer look (label above a full-width select).
+ *   --inline : compact single row for the top navbar (label visually hidden).
+ * Flow360 mounts a single --block instance in the primary sidebar (see
+ * version-switcher-config.js); no breakpoint rules needed for it, since in
+ * sphinx-book-theme the primary sidebar itself becomes the mobile drawer, so
+ * that one instance is already shown at every breakpoint. --inline is kept
+ * for other products / a future top-navbar consumer.
+ */
+
+/* Shared select styling (both variants). */
+.flex-docs-version-switcher {
+  color: inherit;
+  font-size: 0.875em;
+}
+
+.flex-docs-version-switcher__select {
+  font: inherit;
+  color: inherit;
+  /* Faint fill derived from the current text color; works on light + dark. */
+  background-color: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  /* Soften the strong currentColor border so it does not shout. */
+  opacity: 0.85;
+}
+
+.flex-docs-version-switcher__select:hover,
+.flex-docs-version-switcher__select:focus {
+  opacity: 1;
+  outline: none;
+}
+
+.flex-docs-version-switcher__select:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+/* --block: sidebar / drawer look. */
+.flex-docs-version-switcher--block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.5rem 0.5rem 1rem;
+}
+
+.flex-docs-version-switcher--block .flex-docs-version-switcher__label {
+  font-weight: 600;
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.75em;
+}
+
+.flex-docs-version-switcher--block .flex-docs-version-switcher__select {
+  width: 100%;
+  padding: 0.35em 0.5em;
+}
+
+/* --inline: compact navbar row. */
+.flex-docs-version-switcher--inline {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0.25rem;
+}
+
+/* Label visually hidden but kept in the DOM for screen readers. */
+.flex-docs-version-switcher--inline .flex-docs-version-switcher__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.flex-docs-version-switcher--inline .flex-docs-version-switcher__select {
+  height: 2rem;
+  padding: 0 1.5em 0 0.5em;
+  line-height: 1.2;
+}

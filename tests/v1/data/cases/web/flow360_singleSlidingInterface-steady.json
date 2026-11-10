@@ -1,0 +1,108 @@
+{
+    "BETDisks": [],
+    "actuatorDisks": [],
+    "boundaries": {
+        "rotatingBlock-0/slidingInterface-0": {
+            "type": "SlidingInterface"
+        },
+        "rotatingBlock-0/wing": {
+            "type": "NoSlipWall"
+        },
+        "stationaryBlock/farfield": {
+            "type": "Freestream"
+        },
+        "stationaryBlock/slidingInterface-0": {
+            "type": "SlidingInterface"
+        }
+    },
+    "freestream": {
+        "Mach": 0.1469317682550648,
+        "Temperature": 288.15,
+        "alphaAngle": 0,
+        "betaAngle": 0,
+        "comments": {
+            "densityKgPerCubicMeter": 1.225,
+            "freestreamMeterPerSecond": 50,
+            "meshUnitInMeter": 1,
+            "pressure": 101325.009090375,
+            "speedOfSoundMeterPerSecond": 340.29400580821283
+        },
+        "muRef": 4.2925193198151646e-08
+    },
+    "geometry": {
+        "comments": {
+            "meshUnit": "m"
+        },
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            1,
+            1,
+            1
+        ],
+        "refArea": 2
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-09,
+        "kappaMUSCL": -1,
+        "linearIterations": 35,
+        "orderOfAccuracy": 2
+    },
+    "slidingInterfaces": [
+        {
+            "axisOfRotation": [
+                0,
+                1,
+                0
+            ],
+            "centerOfRotation": [
+                0,
+                0,
+                0
+            ],
+            "omega": 0,
+            "rotatingPatches": [
+                "rotatingBlock-0/slidingInterface-0"
+            ],
+            "stationaryPatches": [
+                "stationaryBlock/slidingInterface-0"
+            ],
+            "volumeName": "rotatingBlock-0"
+        }
+    ],
+    "surfaceOutput": {
+        "Cf": false,
+        "CfVec": true,
+        "Cp": true,
+        "outputFormat": "tecplot"
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 100,
+            "initial": 1,
+            "rampSteps": 1000
+        },
+        "maxPhysicalSteps": 1,
+        "maxPseudoSteps": 10000,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "kappaMUSCL": -1,
+        "linearIterations": 25,
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "rotationCorrection": false
+    },
+    "volumeOutput": {
+        "Cp": false,
+        "Mach": true,
+        "outputFormat": "tecplot",
+        "primitiveVars": false,
+        "qcriterion": false,
+        "vorticity": false
+    }
+}

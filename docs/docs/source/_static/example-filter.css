@@ -1,0 +1,156 @@
+/* Filter bar controls */
+.ex-filter {
+  min-width: 60px;   /* ensures buttons line up in a neat column */
+  text-align: center;
+}
+/* Responsive filter bar (just replace your existing .ex-filterbar block) */
+.ex-filterbar {
+  position: fixed;
+  top: 5vw;
+  right: 1vw;
+
+  width: 20vw;        /* scales with viewport width */
+  min-width: 100px;   /* absolute minimum */
+  max-width: 700px;   /* absolute maximum */
+
+  max-height: calc(100vh - 180px);
+  overflow: auto;
+
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+/* Optional: nicer behavior on small screens */
+@media (max-width: 900px) {
+  .ex-filterbar {
+    right: 16px;
+    width: clamp(240px, 40vw, 420px);
+    max-height: calc(100vh - 170px);
+  }
+}
+@media (max-width: 600px) {
+  .ex-filterbar {
+    left: 16px;         /* allow it to stretch more centrally */
+    right: 16px;
+    width: auto;        /* take available space between left/right */
+  }
+}
+.ex-filterbar .ex-filter,
+.ex-filterbar .ex-mode-btn {
+  border: 1px solid var(--pst-color-border, #ddd);
+  background: var(--pst-color-surface, #fff);
+  padding: .25rem .6rem;
+  border-radius: .375rem;
+  cursor: pointer;
+  font-size: .9rem;
+}
+
+/* Active pills: bold + thicker border (not outline) */
+.ex-filterbar .ex-filter.is-active,
+.ex-filterbar .ex-mode-btn.is-active,
+.ex-filterbar .ex-filter[aria-pressed="true"],
+.ex-filterbar .ex-mode-btn[aria-pressed="true"] {
+  border-width: 2px;
+  border-color: var(--pst-color-primary, #2962ff);
+  font-weight: 600;
+  /* Optional: compensate extra border so size doesn't jump */
+  padding: calc(.25rem - 1px) calc(.6rem - 1px);
+}
+
+.ex-mode { margin-left: .5rem; }
+.ex-hide { margin-left: auto; font-size: .9rem; }
+
+/* Tag pills rendered inside cards */
+.ex-tags {
+  margin-top: .5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+.ex-tag {
+  font-size: .75rem;
+  line-height: 1;
+  padding: .2rem .45rem;
+  border: 1px solid var(--pst-color-border, #ddd);
+  border-radius: 999px;
+  background: var(--pst-color-surface, #f8f9fa);
+  text-transform: none;
+}
+
+/* Cards are either shown or removed by JS; no special styling for non-matches */
+/* Group blocks and labels */
+.ex-group {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.5rem;   /* horizontal spacing between buttons */
+  row-gap: 0.28rem;     /* tighter vertical spacing between wrapped rows */
+  margin-bottom: 0.5rem;
+  align-items: flex-start;
+}
+.ex-group:last-child { border-bottom: 0; }
+
+.ex-group-label {
+  font-size: .85rem;
+  flex-basis: 100%;
+  margin-bottom: 0.05rem;   /* smaller gap beneath the label */
+  line-height: 1.1;         /* helps tighten visually */
+  font-weight: bold;
+  opacity: .8;
+}
+
+.ex-grid .gallery-img,
+.ex-grid a.image-reference > img.gallery-img {
+  display: block;
+  width: 100%;   /* fill card width */
+  object-fit: fill;
+}
+.ex-grid .gallery-img {
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Message shown when no examples match the current filter combination */
+.ex-grid .ex-no-results {
+  flex-basis: 100%;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+  color: var(--pst-color-text-muted, #666);
+}
+
+/* -----------------------------------------------------------
+ * Dark mode overrides for the filter bar
+ * ---------------------------------------------------------*/
+html[data-theme="dark"] .ex-filterbar {
+  background: #000;                 /* main filter box black */
+  border: 1px solid #fff;           /* white outline */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  color: #fff;                      /* default text color inside */
+}
+
+html[data-theme="dark"] .ex-group-label {
+  color: #fff;                      /* group titles in white */
+  opacity: 0.95;
+}
+
+html[data-theme="dark"] .ex-filterbar .ex-filter,
+html[data-theme="dark"] .ex-filterbar .ex-mode-btn {
+  background: #111;                 /* slightly lighter black than panel */
+  border-color: #fff;               /* white outline for buttons */
+  color: #fff;                      /* button text visible */
+}
+
+/* Active pills in dark mode: keep them distinct */
+html[data-theme="dark"] .ex-filterbar .ex-filter.is-active,
+html[data-theme="dark"] .ex-filterbar .ex-mode-btn.is-active,
+html[data-theme="dark"] .ex-filterbar .ex-filter[aria-pressed="true"],
+html[data-theme="dark"] .ex-filterbar .ex-mode-btn[aria-pressed="true"] {
+  background: #222;
+  border-color: var(--pst-color-primary, #4772ae);
+  color: #fff;
+}
+

@@ -1,0 +1,122 @@
+{
+    "boundaries": {
+        "fluid/bottom": {
+            "type": "SlipWall"
+        },
+        "fluid/inlet": {
+            "type": "VelocityInflow"
+        },
+        "fluid/outlet": {
+            "type": "SlipWall"
+        },
+        "fluid/periodic_0_l": {
+            "type": "SlipWall"
+        },
+        "fluid/periodic_0_r": {
+            "type": "SlipWall"
+        },
+        "fluid/top": {
+            "type": "SlipWall"
+        },
+        "fluid/wall": {
+            "type": "NoSlipWall"
+        }
+    },
+    "freestream": {
+        "Mach": 1,
+        "Reynolds": 50,
+        "Temperature": 288.15,
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "staticPressureLocation": [
+            150,
+            0,
+            0
+        ]
+    },
+    "geometry": {
+        "endianness": "big",
+        "meshName": "cylinder.cgns",
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "refArea": 20.0
+    },
+    "navierStokesSolver": {
+        "kappaMUSCL": -1.0,
+        "linearIterations": 25,
+        "modelType": "Incompressible",
+        "tolerance": 1e-09,
+        "updateJacobianFrequency": 1
+    },
+    "runControl": {
+        "restart": false
+    },
+    "sliceOutput": {
+        "outputFormat": "paraview",
+        "slices": [
+            {
+                "sliceName": "sliceTest",
+                "sliceNormal": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.7165,
+                    0.27772,
+                    0.0179426
+                ]
+            }
+        ]
+    },
+    "surfaceOutput": {
+        "Cf": false,
+        "CfVec": false,
+        "Cp": true,
+        "Mach": false,
+        "outputFormat": "paraview",
+        "primitiveVars": false,
+        "wallDistance": false,
+        "yPlus": false
+    },
+    "testControl": {
+        "localW": true
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 1000000.0,
+            "initial": 1000000.0,
+            "rampSteps": 1
+        },
+        "maxPseudoSteps": 2,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 2000,
+        "timeStepSize": 0.1
+    },
+    "turbulenceModelSolver": {
+        "kappaMUSCL": -1.0,
+        "linearIterations": 15,
+        "modelType": "None",
+        "tolerance": 1e-08
+    },
+    "volumeOutput": {
+        "Cp": true,
+        "T": true,
+        "mut": true,
+        "mutRatio": false,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "residualNavierStokes": true,
+        "residualTurbulence": true,
+        "s": false,
+        "vorticity": true
+    }
+}

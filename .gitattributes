@@ -1,0 +1,4 @@
+# Flow360 assets that are mirrored to flex must carry their LFS rules with the
+# subtree; the compute repo root .gitattributes is not part of the Copybara scope.
+flow360/plugins/report/img/*.png filter=lfs diff=lfs merge=lfs -text
+tests/**/*.cgns filter=lfs diff=lfs merge=lfs -text
